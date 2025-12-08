@@ -184,9 +184,11 @@ def create_cross_cursor(size: int = 32):
     return img
 
 
-def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: int = 3):
+def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: int = 3, heavy_style: bool = True):
     """
     カーソル画像にグローを追加
+    heavy_style=True: Heavyグロー（右下強調）
+    heavy_style=False: Lightグロー（対称・全方向均等）
     """
     width, height = cursor_img.size
     
@@ -197,8 +199,13 @@ def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: in
     
     # グロー用に大きなキャンバス
     padding = glow_size + 2
-    canvas_w = width + padding * 2
-    canvas_h = height + padding * 2
+    if heavy_style:
+        extra = 4  # 右下に追加余白
+        canvas_w = width + padding * 2 + extra
+        canvas_h = height + padding * 2 + extra
+    else:
+        canvas_w = width + padding * 2
+        canvas_h = height + padding * 2
     
     # アルファチャンネルを取得
     if cursor_img.mode == 'RGBA':
@@ -206,14 +213,11 @@ def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: in
     else:
         alpha = Image.new('L', cursor_img.size, 255)
     
-    # グロー層を作成
+    # === 通常グロー層（対称） ===
     glow_img = Image.new('RGBA', (canvas_w, canvas_h), (0, 0, 0, 0))
-    
-    # アルファをパディング付きで配置
     alpha_padded = Image.new('L', (canvas_w, canvas_h), 0)
     alpha_padded.paste(alpha, (padding, padding))
     
-    # 複数レイヤーでグロー効果
     for i in range(glow_size, 0, -1):
         glow_alpha = int(80 * (1 - i / (glow_size + 2)))
         expanded = alpha_padded.filter(ImageFilter.MaxFilter(i * 2 + 1))
@@ -222,8 +226,26 @@ def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: in
         glow_layer.putalpha(glow_mask)
         glow_img = Image.alpha_composite(glow_img, glow_layer)
     
-    # ぼかし
     glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=1.5))
+    
+    # === 右下追加グロー層（heavy_styleの場合のみ） ===
+    if heavy_style:
+        extra_glow = Image.new('RGBA', (canvas_w, canvas_h), (0, 0, 0, 0))
+        alpha_offset = Image.new('L', (canvas_w, canvas_h), 0)
+        alpha_offset.paste(alpha, (padding + 2, padding + 2))  # 右下にオフセット
+        
+        for i in range(glow_size + 1, 0, -1):
+            glow_alpha = int(60 * (1 - i / (glow_size + 3)))
+            expanded = alpha_offset.filter(ImageFilter.MaxFilter(i * 2 + 1))
+            glow_layer = Image.new('RGBA', (canvas_w, canvas_h), (*glow_color, 0))
+            glow_mask = expanded.point(lambda x: glow_alpha if x > 50 else 0)
+            glow_layer.putalpha(glow_mask)
+            extra_glow = Image.alpha_composite(extra_glow, glow_layer)
+        
+        extra_glow = extra_glow.filter(ImageFilter.GaussianBlur(radius=2.0))
+        
+        # 通常グロー + 右下追加グローを合成
+        glow_img = Image.alpha_composite(glow_img, extra_glow)
     
     # 元のカーソルを上に合成
     result = Image.new('RGBA', (canvas_w, canvas_h), (0, 0, 0, 0))
@@ -391,17 +413,31 @@ def process_cursor(name: str, filename: str, default_hotspot_x: int, default_hot
         if not os.path.exists(images_dir):
             os.makedirs(images_dir)
         
+        # === Lightグロー版（対称・旧デフォルト） ===
         # 青グロー (EN)
-        blue = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3)
-        en_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en.cur")
-        png_to_cur(blue, en_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
-        save_preview_image(blue, os.path.join(images_dir, f"cursor_{name}_en.png"))
+        blue_light = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3, heavy_style=False)
+        en_light_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en_light.cur")
+        png_to_cur(blue_light, en_light_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(blue_light, os.path.join(images_dir, f"cursor_{name}_en_light.png"))
         
         # 赤グロー (JP)
-        red = add_glow_to_cursor(cursor_32, (255, 50, 50), glow_size=3)
-        jp_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_jp.cur")
-        png_to_cur(red, jp_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
-        save_preview_image(red, os.path.join(images_dir, f"cursor_{name}_jp.png"))
+        red_light = add_glow_to_cursor(cursor_32, (255, 50, 50), glow_size=3, heavy_style=False)
+        jp_light_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_jp_light.cur")
+        png_to_cur(red_light, jp_light_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(red_light, os.path.join(images_dir, f"cursor_{name}_jp_light.png"))
+        
+        # === Heavyグロー版（右下強調） ===
+        # 青グロー (EN)
+        blue_heavy = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3, heavy_style=True)
+        en_heavy_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en_heavy.cur")
+        png_to_cur(blue_heavy, en_heavy_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(blue_heavy, os.path.join(images_dir, f"cursor_{name}_en_heavy.png"))
+        
+        # 赤グロー (JP)
+        red_heavy = add_glow_to_cursor(cursor_32, (255, 50, 50), glow_size=3, heavy_style=True)
+        jp_heavy_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_jp_heavy.cur")
+        png_to_cur(red_heavy, jp_heavy_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(red_heavy, os.path.join(images_dir, f"cursor_{name}_jp_heavy.png"))
         
         return True
         
@@ -436,7 +472,7 @@ def main():
     print(f"成功: {success_count}")
     print(f"スキップ: {skip_count}")
     print(f"失敗: {fail_count}")
-    print(f"合計ファイル: {success_count * 2} (EN/JP)")
+    print(f"合計ファイル: {success_count * 4} (Light EN/JP + Heavy EN/JP)")
 
 
 if __name__ == "__main__":

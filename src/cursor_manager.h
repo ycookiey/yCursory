@@ -8,6 +8,11 @@
 
 class CursorManager {
 public:
+    enum GlowStyle {
+        StyleLight = 0,
+        StyleHeavy = 1
+    };
+
     CursorManager();
     ~CursorManager();
     
@@ -17,6 +22,12 @@ public:
     // IME状態に応じてカーソルを設定
     void SetCursorForState(ImeState state, bool force = false);
     
+    // グロースタイルを設定
+    void SetGlowStyle(GlowStyle style);
+    
+    // 現在のグロースタイルを取得
+    GlowStyle GetGlowStyle() const { return m_currentStyle; }
+
     // 元のカーソルに復元
     void RestoreOriginalCursor();
     
@@ -40,9 +51,13 @@ private:
     // 各カーソル種類に対応するOCR ID
     static const DWORD s_ocrIds[CURSOR_TYPE_COUNT];
     
-    HCURSOR m_cursorsEn[CURSOR_TYPE_COUNT];  // 英字モード用カーソル
-    HCURSOR m_cursorsJp[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル
-    HCURSOR m_originals[CURSOR_TYPE_COUNT];  // 元のカーソル
+    HCURSOR m_cursorsEnLight[CURSOR_TYPE_COUNT];  // 英字モード用カーソル (Light)
+    HCURSOR m_cursorsJpLight[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル (Light)
+    HCURSOR m_cursorsEnHeavy[CURSOR_TYPE_COUNT];  // 英字モード用カーソル (Heavy)
+    HCURSOR m_cursorsJpHeavy[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル (Heavy)
+    HCURSOR m_originals[CURSOR_TYPE_COUNT];       // 元のカーソル
+    
     ImeState m_currentState;
+    GlowStyle m_currentStyle;
     bool m_initialized;
 };

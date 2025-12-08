@@ -18,37 +18,74 @@ const DWORD CursorManager::s_ocrIds[CURSOR_TYPE_COUNT] = {
     OCR_HAND       // CURSOR_HAND
 };
 
-// 英語モードのリソースID
-static const int s_resourceIdsEn[CURSOR_TYPE_COUNT] = {
-    IDC_CURSOR_ARROW_EN,
-    IDC_CURSOR_IBEAM_EN,
-    IDC_CURSOR_WAIT_EN,
-    IDC_CURSOR_CROSS_EN,
-    IDC_CURSOR_UPARROW_EN,
-    IDC_CURSOR_SIZENWSE_EN,
-    IDC_CURSOR_SIZENESW_EN,
-    IDC_CURSOR_SIZEWE_EN,
-    IDC_CURSOR_SIZENS_EN,
-    IDC_CURSOR_SIZEALL_EN,
-    IDC_CURSOR_NO_EN,
-    IDC_CURSOR_HAND_EN
+// 英語モード（Light）のリソースID
+static const int s_resourceIdsEnLight[CURSOR_TYPE_COUNT] = {
+    IDC_CURSOR_ARROW_EN_LIGHT,
+    IDC_CURSOR_IBEAM_EN_LIGHT,
+    IDC_CURSOR_WAIT_EN_LIGHT,
+    IDC_CURSOR_CROSS_EN_LIGHT,
+    IDC_CURSOR_UPARROW_EN_LIGHT,
+    IDC_CURSOR_SIZENWSE_EN_LIGHT,
+    IDC_CURSOR_SIZENESW_EN_LIGHT,
+    IDC_CURSOR_SIZEWE_EN_LIGHT,
+    IDC_CURSOR_SIZENS_EN_LIGHT,
+    IDC_CURSOR_SIZEALL_EN_LIGHT,
+    IDC_CURSOR_NO_EN_LIGHT,
+    IDC_CURSOR_HAND_EN_LIGHT
 };
 
-// 日本語モードのリソースID
-static const int s_resourceIdsJp[CURSOR_TYPE_COUNT] = {
-    IDC_CURSOR_ARROW_JP,
-    IDC_CURSOR_IBEAM_JP,
-    IDC_CURSOR_WAIT_JP,
-    IDC_CURSOR_CROSS_JP,
-    IDC_CURSOR_UPARROW_JP,
-    IDC_CURSOR_SIZENWSE_JP,
-    IDC_CURSOR_SIZENESW_JP,
-    IDC_CURSOR_SIZEWE_JP,
-    IDC_CURSOR_SIZENS_JP,
-    IDC_CURSOR_SIZEALL_JP,
-    IDC_CURSOR_NO_JP,
-    IDC_CURSOR_HAND_JP
+// 日本語モード（Light）のリソースID
+static const int s_resourceIdsJpLight[CURSOR_TYPE_COUNT] = {
+    IDC_CURSOR_ARROW_JP_LIGHT,
+    IDC_CURSOR_IBEAM_JP_LIGHT,
+    IDC_CURSOR_WAIT_JP_LIGHT,
+    IDC_CURSOR_CROSS_JP_LIGHT,
+    IDC_CURSOR_UPARROW_JP_LIGHT,
+    IDC_CURSOR_SIZENWSE_JP_LIGHT,
+    IDC_CURSOR_SIZENESW_JP_LIGHT,
+    IDC_CURSOR_SIZEWE_JP_LIGHT,
+    IDC_CURSOR_SIZENS_JP_LIGHT,
+    IDC_CURSOR_SIZEALL_JP_LIGHT,
+    IDC_CURSOR_NO_JP_LIGHT,
+    IDC_CURSOR_HAND_JP_LIGHT
 };
+
+// 英語モード（Heavy）のリソースID
+static const int s_resourceIdsEnHeavy[CURSOR_TYPE_COUNT] = {
+    IDC_CURSOR_ARROW_EN_HEAVY,
+    IDC_CURSOR_IBEAM_EN_HEAVY,
+    IDC_CURSOR_WAIT_EN_HEAVY,
+    IDC_CURSOR_CROSS_EN_HEAVY,
+    IDC_CURSOR_UPARROW_EN_HEAVY,
+    IDC_CURSOR_SIZENWSE_EN_HEAVY,
+    IDC_CURSOR_SIZENESW_EN_HEAVY,
+    IDC_CURSOR_SIZEWE_EN_HEAVY,
+    IDC_CURSOR_SIZENS_EN_HEAVY,
+    IDC_CURSOR_SIZEALL_EN_HEAVY,
+    IDC_CURSOR_NO_EN_HEAVY,
+    IDC_CURSOR_HAND_EN_HEAVY
+};
+
+// 日本語モード（Heavy）のリソースID
+static const int s_resourceIdsJpHeavy[CURSOR_TYPE_COUNT] = {
+    IDC_CURSOR_ARROW_JP_HEAVY,
+    IDC_CURSOR_IBEAM_JP_HEAVY,
+    IDC_CURSOR_WAIT_JP_HEAVY,
+    IDC_CURSOR_CROSS_JP_HEAVY,
+    IDC_CURSOR_UPARROW_JP_HEAVY,
+    IDC_CURSOR_SIZENWSE_JP_HEAVY,
+    IDC_CURSOR_SIZENESW_JP_HEAVY,
+    IDC_CURSOR_SIZEWE_JP_HEAVY,
+    IDC_CURSOR_SIZENS_JP_HEAVY,
+    IDC_CURSOR_SIZEALL_JP_HEAVY,
+    IDC_CURSOR_NO_JP_HEAVY,
+    IDC_CURSOR_HAND_JP_HEAVY
+};
+
+
+// 英語モード（右下強調）のリソースID...は削除（上で追加済み）
+
+// 日本語モード（右下強調）のリソースID...は削除（上で追加済み）
 
 // システムカーソルを取得するためのIDC定数
 static const LPCTSTR s_systemCursorIds[CURSOR_TYPE_COUNT] = {
@@ -68,10 +105,13 @@ static const LPCTSTR s_systemCursorIds[CURSOR_TYPE_COUNT] = {
 
 CursorManager::CursorManager()
     : m_currentState(ImeState::English)
+    , m_currentStyle(GlowStyle::StyleHeavy) // デフォルトはHeavy（旧右下強調）
     , m_initialized(false) {
     for (int i = 0; i < CURSOR_TYPE_COUNT; i++) {
-        m_cursorsEn[i] = NULL;
-        m_cursorsJp[i] = NULL;
+        m_cursorsEnLight[i] = NULL;
+        m_cursorsJpLight[i] = NULL;
+        m_cursorsEnHeavy[i] = NULL;
+        m_cursorsJpHeavy[i] = NULL;
         m_originals[i] = NULL;
     }
 }
@@ -89,18 +129,25 @@ bool CursorManager::Initialize(HINSTANCE hInstance) {
         m_originals[i] = CopyCursor(LoadCursor(NULL, s_systemCursorIds[i]));
         
         // カスタムカーソルをリソースから読み込み
-        m_cursorsEn[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsEn[i]));
-        m_cursorsJp[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsJp[i]));
+        m_cursorsEnLight[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsEnLight[i]));
+        m_cursorsJpLight[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsJpLight[i]));
+        m_cursorsEnHeavy[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsEnHeavy[i]));
+        m_cursorsJpHeavy[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsJpHeavy[i]));
         
-        if (m_cursorsEn[i] == NULL || m_cursorsJp[i] == NULL) {
-            // リソースから読み込めない場合、元のカーソルを使用（グロー効果なし）
-            // これにより、一部のカーソルが欠けても動作継続可能
-            if (m_cursorsEn[i] == NULL && m_originals[i] != NULL) {
-                m_cursorsEn[i] = CopyCursor(m_originals[i]);
-            }
-            if (m_cursorsJp[i] == NULL && m_originals[i] != NULL) {
-                m_cursorsJp[i] = CopyCursor(m_originals[i]);
-            }
+        // リソース読み込み失敗時のフォールバック (Light)
+        if (m_cursorsEnLight[i] == NULL && m_originals[i] != NULL) {
+            m_cursorsEnLight[i] = CopyCursor(m_originals[i]);
+        }
+        if (m_cursorsJpLight[i] == NULL && m_originals[i] != NULL) {
+            m_cursorsJpLight[i] = CopyCursor(m_originals[i]);
+        }
+        
+        // リソース読み込み失敗時のフォールバック (Heavy)
+        if (m_cursorsEnHeavy[i] == NULL) {
+            m_cursorsEnHeavy[i] = (m_cursorsEnLight[i] != NULL) ? CopyCursor(m_cursorsEnLight[i]) : CopyCursor(m_originals[i]);
+        }
+        if (m_cursorsJpHeavy[i] == NULL) {
+            m_cursorsJpHeavy[i] = (m_cursorsJpLight[i] != NULL) ? CopyCursor(m_cursorsJpLight[i]) : CopyCursor(m_originals[i]);
         }
     }
     
@@ -116,7 +163,14 @@ void CursorManager::SetCursorForState(ImeState state, bool force) {
     
     // 全種類のカーソルを更新
     for (int i = 0; i < CURSOR_TYPE_COUNT; i++) {
-        HCURSOR newCursor = (state == ImeState::English) ? m_cursorsEn[i] : m_cursorsJp[i];
+        HCURSOR newCursor = NULL;
+        
+        if (m_currentStyle == GlowStyle::StyleHeavy) {
+            newCursor = (state == ImeState::English) ? m_cursorsEnHeavy[i] : m_cursorsJpHeavy[i];
+        } else {
+            newCursor = (state == ImeState::English) ? m_cursorsEnLight[i] : m_cursorsJpLight[i];
+        }
+
         if (newCursor != NULL) {
             HCURSOR cursorCopy = CopyCursor(newCursor);
             if (cursorCopy != NULL) {
@@ -124,6 +178,14 @@ void CursorManager::SetCursorForState(ImeState state, bool force) {
             }
         }
     }
+}
+
+void CursorManager::SetGlowStyle(GlowStyle style) {
+    if (m_currentStyle == style) return;
+    
+    m_currentStyle = style;
+    // スタイル変更を反映するためにカーソルを強制更新
+    SetCursorForState(m_currentState, true);
 }
 
 void CursorManager::RestoreOriginalCursor() {

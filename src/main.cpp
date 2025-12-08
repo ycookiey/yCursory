@@ -15,6 +15,32 @@ static HWND g_hwnd = NULL;
 #define TIMER_CHECK_IME 1
 #define CHECK_INTERVAL_MS 100
 
+// Registry Key
+const wchar_t* REG_KEY_PATH = L"Software\\yCursory";
+const wchar_t* REG_VALUE_STYLE = L"GlowStyle";
+
+// Settings
+void SaveSettings() {
+    HKEY hKey;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, REG_KEY_PATH, 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        DWORD style = (DWORD)g_cursorManager->GetGlowStyle();
+        RegSetValueExW(hKey, REG_VALUE_STYLE, 0, REG_DWORD, (const BYTE*)&style, sizeof(style));
+        RegCloseKey(hKey);
+    }
+}
+
+void LoadSettings() {
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, REG_KEY_PATH, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD style = 0;
+        DWORD size = sizeof(style);
+        if (RegQueryValueExW(hKey, REG_VALUE_STYLE, NULL, NULL, (LPBYTE)&style, &size) == ERROR_SUCCESS) {
+            g_cursorManager->SetGlowStyle((CursorManager::GlowStyle)style);
+        }
+        RegCloseKey(hKey);
+    }
+}
+
 // Window procedure
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
@@ -52,6 +78,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             AppendMenuW(hMenu, startupFlags, IDM_STARTUP, L"スタートアップに登録");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            
+            // グロースタイルメニュー
+            HMENU hSubMenu = CreatePopupMenu();
+            CursorManager::GlowStyle currentStyle = g_cursorManager->GetGlowStyle();
+            
+            AppendMenuW(hSubMenu, MF_STRING | (currentStyle == CursorManager::StyleLight ? MF_CHECKED : 0), 
+                IDM_STYLE_LIGHT, L"Light");
+            AppendMenuW(hSubMenu, MF_STRING | (currentStyle == CursorManager::StyleHeavy ? MF_CHECKED : 0), 
+                IDM_STYLE_HEAVY, L"Heavy");
+                
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, L"Glow Style");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            
             AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"Exit");
             
             SetForegroundWindow(hwnd);
@@ -71,6 +110,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             } else {
                 StartupManager::Register();
             }
+        } else if (LOWORD(wParam) == IDM_STYLE_LIGHT) {
+            g_cursorManager->SetGlowStyle(CursorManager::StyleLight);
+            SaveSettings();
+        } else if (LOWORD(wParam) == IDM_STYLE_HEAVY) {
+            g_cursorManager->SetGlowStyle(CursorManager::StyleHeavy);
+            SaveSettings();
         }
         return 0;
         
@@ -128,6 +173,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     }
     
     // Set initial state (force=true to ensure cursor is set)
+    LoadSettings(); // 設定読み込み
     ImeState initialState = g_imeMonitor->GetCurrentState();
     g_cursorManager->SetCursorForState(initialState, true);
     
