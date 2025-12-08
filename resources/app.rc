@@ -4,23 +4,47 @@
 // アプリケーションアイコン
 IDI_APP_ICON ICON "app.ico"
 
-// カーソルリソース
-IDC_CURSOR_EN CURSOR "cursor_en.cur"
-IDC_CURSOR_JP CURSOR "cursor_jp.cur"
+// カーソルリソース - 英語モード
+IDC_CURSOR_ARROW_EN    CURSOR "cursor_arrow_en.cur"
+IDC_CURSOR_IBEAM_EN    CURSOR "cursor_ibeam_en.cur"
+IDC_CURSOR_WAIT_EN     CURSOR "cursor_wait_en.cur"
+IDC_CURSOR_CROSS_EN    CURSOR "cursor_cross_en.cur"
+IDC_CURSOR_UPARROW_EN  CURSOR "cursor_uparrow_en.cur"
+IDC_CURSOR_SIZENWSE_EN CURSOR "cursor_sizenwse_en.cur"
+IDC_CURSOR_SIZENESW_EN CURSOR "cursor_sizenesw_en.cur"
+IDC_CURSOR_SIZEWE_EN   CURSOR "cursor_sizewe_en.cur"
+IDC_CURSOR_SIZENS_EN   CURSOR "cursor_sizens_en.cur"
+IDC_CURSOR_SIZEALL_EN  CURSOR "cursor_sizeall_en.cur"
+IDC_CURSOR_NO_EN       CURSOR "cursor_no_en.cur"
+IDC_CURSOR_HAND_EN     CURSOR "cursor_hand_en.cur"
+
+// カーソルリソース - 日本語モード
+IDC_CURSOR_ARROW_JP    CURSOR "cursor_arrow_jp.cur"
+IDC_CURSOR_IBEAM_JP    CURSOR "cursor_ibeam_jp.cur"
+IDC_CURSOR_WAIT_JP     CURSOR "cursor_wait_jp.cur"
+IDC_CURSOR_CROSS_JP    CURSOR "cursor_cross_jp.cur"
+IDC_CURSOR_UPARROW_JP  CURSOR "cursor_uparrow_jp.cur"
+IDC_CURSOR_SIZENWSE_JP CURSOR "cursor_sizenwse_jp.cur"
+IDC_CURSOR_SIZENESW_JP CURSOR "cursor_sizenesw_jp.cur"
+IDC_CURSOR_SIZEWE_JP   CURSOR "cursor_sizewe_jp.cur"
+IDC_CURSOR_SIZENS_JP   CURSOR "cursor_sizens_jp.cur"
+IDC_CURSOR_SIZEALL_JP  CURSOR "cursor_sizeall_jp.cur"
+IDC_CURSOR_NO_JP       CURSOR "cursor_no_jp.cur"
+IDC_CURSOR_HAND_JP     CURSOR "cursor_hand_jp.cur"
 
 // バージョン情報
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,0,0,0
-PRODUCTVERSION 1,0,0,0
+FILEVERSION 1,1,0,0
+PRODUCTVERSION 1,1,0,0
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
         BLOCK "041104b0"
         BEGIN
             VALUE "FileDescription", "IME Cursor Indicator"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", "1.1.0.0"
             VALUE "ProductName", "IME Cursor Indicator"
-            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "ProductVersion", "1.1.0.0"
         END
     END
 END

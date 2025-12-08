@@ -67,8 +67,121 @@ def read_cur_file(cur_path: str):
             
             img.putdata(pixels)
             return img, hotspot_x, hotspot_y
+        
+        elif bi_bit_count == 1:
+            # 1bit モノクロカーソル (XOR + AND マスク)
+            row_size = ((bi_width + 31) // 32) * 4  # 4バイト境界
+            
+            # XORマスク (画像データ)
+            xor_data = f.read(row_size * actual_height)
+            # ANDマスク (透明マスク)
+            and_data = f.read(row_size * actual_height)
+            
+            img = Image.new('RGBA', (bi_width, actual_height))
+            pixels = []
+            
+            for y in range(actual_height - 1, -1, -1):  # ボトムアップ
+                for x in range(bi_width):
+                    byte_idx = x // 8
+                    bit_idx = 7 - (x % 8)
+                    row_offset = y * row_size
+                    
+                    xor_bit = (xor_data[row_offset + byte_idx] >> bit_idx) & 1
+                    and_bit = (and_data[row_offset + byte_idx] >> bit_idx) & 1
+                    
+                    # AND=0, XOR=0 → 黒 (不透明)
+                    # AND=0, XOR=1 → 白 (不透明)
+                    # AND=1, XOR=0 → 透明
+                    # AND=1, XOR=1 → 反転 (半透明白として表現)
+                    if and_bit == 0:
+                        if xor_bit == 0:
+                            pixels.append((0, 0, 0, 255))  # 黒
+                        else:
+                            pixels.append((255, 255, 255, 255))  # 白
+                    else:
+                        if xor_bit == 0:
+                            pixels.append((0, 0, 0, 0))  # 透明
+                        else:
+                            pixels.append((128, 128, 128, 180))  # 反転→半透明グレー
+            
+            img.putdata(pixels)
+            return img, hotspot_x, hotspot_y
+        
         else:
             raise ValueError(f"Unsupported bit count: {bi_bit_count}")
+
+
+def create_ibeam_cursor(size: int = 32):
+    """
+    I字型カーソル（テキスト入力用）を手動作成
+    Windows標準 ibeam.svg の座標に基づく:
+    - 上セリフ: X 11-21, Y 7.5-9.5 (幅10, 高さ2)
+    - 縦棒: X 15-17, Y 9.5-22.5 (幅2, 高さ13)
+    - 下セリフ: X 11-21, Y 22.5-24.5 (幅10, 高さ2)
+    """
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # 白い塗り（#FFFFFE）+ 黒い枠線（#000001）
+    # SVGのpolygon座標をそのまま使用
+    points = [
+        (21, 9), (21, 7), (17, 7), (17, 8), (15, 8), (15, 7), (11, 7), (11, 9),
+        (15, 9), (15, 22), (11, 22), (11, 24), (15, 24), (15, 24), (17, 24), (17, 24),
+        (21, 24), (21, 22), (17, 22), (17, 9)
+    ]
+    
+    # 白塗り + 黒枠
+    draw.polygon(points, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+    
+    return img
+
+
+def create_wait_cursor(size: int = 32):
+    """
+    砂時計カーソル（待機用）を手動作成
+    Windows標準 wait.svg の座標に基づく
+    """
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # 砂時計本体（白塗り）
+    hourglass_points = [
+        (10, 25), (22, 25), (22, 21), (18, 17), (18, 15), (22, 11), (22, 6),
+        (10, 6), (10, 11), (14, 15), (14, 17), (10, 21)
+    ]
+    draw.polygon(hourglass_points, fill=(255, 255, 255, 255))
+    
+    # 輪郭線（黒）
+    draw.line([(22, 25), (22, 21), (18, 17), (18, 15), (22, 11), (22, 6)], fill=(0, 0, 0, 255))
+    draw.line([(10, 6), (10, 11), (14, 15), (14, 17), (10, 21), (10, 25)], fill=(0, 0, 0, 255))
+    
+    # 上下の枠（白塗り＋黒枠）
+    draw.rectangle([9, 4, 23, 6], fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+    draw.rectangle([9, 25, 23, 27], fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+    
+    return img
+
+
+def create_cross_cursor(size: int = 32):
+    """
+    十字カーソル（精密選択用）を手動作成
+    Windows標準 cross.svg の座標に基づく:
+    - 縦線: X 15-17, Y 7-25 (幅2, 高さ18)
+    - 横線: X 7-25, Y 15-17 (幅18, 高さ2)
+    """
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # SVGのpolygon座標に基づく十字形
+    points = [
+        (15, 15), (15, 7), (17, 7), (17, 15), (25, 15), (25, 17),
+        (17, 17), (17, 25), (15, 25), (15, 17), (7, 17), (7, 15)
+    ]
+    
+    # 白塗り + 黒枠
+    draw.polygon(points, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+    
+    return img
 
 
 def add_glow_to_cursor(cursor_img: Image.Image, glow_color: tuple, glow_size: int = 3):
@@ -188,44 +301,114 @@ def png_to_cur(img: Image.Image, cur_path: str, hotspot_x: int = 0, hotspot_y: i
     print(f"Generated: {cur_path}")
 
 
-def main():
-    # Windows標準カーソルファイル
-    system_cursor = r"C:\Windows\Cursors\aero_arrow.cur"
-    
-    if not os.path.exists(system_cursor):
-        print(f"System cursor not found: {system_cursor}")
-        return
-    
-    print(f"Reading system cursor: {system_cursor}")
+# 全システムカーソル定義
+# (名前, ファイル名, デフォルトhotspot_x, デフォルトhotspot_y)
+# 注: _r.cur は1ビット形式で非対応なので、_m.cur（32ビット）を使用
+SYSTEM_CURSORS = [
+    ("arrow", "aero_arrow.cur", 0, 0),
+    ("ibeam", "beam_m.cur", 4, 9),           # beam_r.curは1bit、beam_m.curは32bit
+    ("wait", "wait_m.cur", 16, 16),          # aero_busy.curは.ani、wait_m.curは.cur
+    ("cross", "cross_m.cur", 16, 16),        # cross_r.curは1bit、cross_m.curは32bit
+    ("uparrow", "aero_up.cur", 5, 0),
+    ("sizenwse", "aero_nwse.cur", 8, 8),
+    ("sizenesw", "aero_nesw.cur", 8, 8),
+    ("sizewe", "aero_ew.cur", 8, 8),
+    ("sizens", "aero_ns.cur", 8, 8),
+    ("sizeall", "aero_move.cur", 16, 16),
+    ("no", "aero_unavail.cur", 8, 8),
+    ("hand", "aero_link.cur", 6, 0),
+    ("appstarting", "aero_working.ani", 0, 0),  # .aniは非対応、スキップ
+]
+
+def process_cursor(name: str, filename: str, default_hotspot_x: int, default_hotspot_y: int) -> bool:
+    """
+    単一のカーソルを処理してEN/JP版を生成
+    """
+    # .aniファイルはスキップ
+    if filename.endswith('.ani'):
+        print(f"  Skipping animated cursor: {filename}")
+        return False
     
     try:
-        cursor_img, hotspot_x, hotspot_y = read_cur_file(system_cursor)
-        print(f"Cursor size: {cursor_img.size}, Hotspot: ({hotspot_x}, {hotspot_y})")
+        # 特定のカーソルは自作関数を使用（1ビット形式回避）
+        if name == "ibeam":
+            cursor_32 = create_ibeam_cursor(32)
+            hotspot_x, hotspot_y = 16, 16  # 中央
+        elif name == "wait":
+            cursor_32 = create_wait_cursor(32)
+            hotspot_x, hotspot_y = 16, 16  # 中央
+        elif name == "cross":
+            cursor_32 = create_cross_cursor(32)
+            hotspot_x, hotspot_y = 16, 16  # 中央
+        else:
+            # システムカーソルから読み込み
+            cursor_path = os.path.join(r"C:\Windows\Cursors", filename)
+            
+            if not os.path.exists(cursor_path):
+                print(f"  Not found: {cursor_path}")
+                return False
+            
+            cursor_img, hotspot_x, hotspot_y = read_cur_file(cursor_path)
+            
+            # hotspotが0,0の場合はデフォルト値を使用
+            if hotspot_x == 0 and hotspot_y == 0:
+                hotspot_x = default_hotspot_x
+                hotspot_y = default_hotspot_y
+            
+            # 32x32にリサイズ（大きい場合）
+            if cursor_img.size[0] > 32 or cursor_img.size[1] > 32:
+                cursor_32 = cursor_img.resize((32, 32), Image.Resampling.LANCZOS)
+                # hotspotも比率でスケール
+                scale = 32 / max(cursor_img.size)
+                hotspot_x = int(hotspot_x * scale)
+                hotspot_y = int(hotspot_y * scale)
+            else:
+                cursor_32 = cursor_img
         
-        # 元のカーソルを保存
-        cursor_img.save(os.path.join(OUTPUT_DIR, "original_aero_arrow.png"))
-        
-        # 32x32にリサイズ
-        cursor_32 = cursor_img.resize((32, 32), Image.Resampling.LANCZOS)
-        
-        # 青グロー
+        # 青グロー (EN)
         blue = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3)
-        blue.save(os.path.join(OUTPUT_DIR, "cursor_blue_aero.png"))
-        png_to_cur(blue, os.path.join(OUTPUT_DIR, "resources", "cursor_en.cur"), 
-                   hotspot_x=2, hotspot_y=2)
+        en_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en.cur")
+        png_to_cur(blue, en_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
         
-        # 赤グロー
+        # 赤グロー (JP)
         red = add_glow_to_cursor(cursor_32, (255, 50, 50), glow_size=3)
-        red.save(os.path.join(OUTPUT_DIR, "cursor_red_aero.png"))
-        png_to_cur(red, os.path.join(OUTPUT_DIR, "resources", "cursor_jp.cur"),
-                   hotspot_x=2, hotspot_y=2)
+        jp_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_jp.cur")
+        png_to_cur(red, jp_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
         
-        print("\nDone! Cursors created from Windows system cursor.")
+        return True
         
     except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"  Error processing {name}: {e}")
+        return False
+
+
+def main():
+    print("=== 全システムカーソル生成スクリプト ===\n")
+    
+    # 出力ディレクトリ確認
+    resources_dir = os.path.join(OUTPUT_DIR, "resources")
+    if not os.path.exists(resources_dir):
+        os.makedirs(resources_dir)
+    
+    success_count = 0
+    skip_count = 0
+    fail_count = 0
+    
+    for name, filename, hx, hy in SYSTEM_CURSORS:
+        print(f"Processing: {name} ({filename})")
+        result = process_cursor(name, filename, hx, hy)
+        if result:
+            success_count += 1
+        elif filename.endswith('.ani'):
+            skip_count += 1
+        else:
+            fail_count += 1
+    
+    print(f"\n=== 完了 ===")
+    print(f"成功: {success_count}")
+    print(f"スキップ: {skip_count}")
+    print(f"失敗: {fail_count}")
+    print(f"合計ファイル: {success_count * 2} (EN/JP)")
 
 
 if __name__ == "__main__":
