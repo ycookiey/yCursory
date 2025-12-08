@@ -1,0 +1,23 @@
+# Build outputs
+build/
+*.obj
+*.res
+*.exe
+*.pdb
+*.ilk
+
+# Python
+__pycache__/
+*.pyc
+
+# Generated images (keep in repo for convenience)
+# *.png
+
+# IDE
+.vs/
+.vscode/
+
+# Logs
+*.log
+build_output.txt
+build_log.txt
