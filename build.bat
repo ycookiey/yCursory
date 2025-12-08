@@ -6,6 +6,10 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Too
 
 cd /d "%~dp0"
 
+REM Terminate running instance to avoid LNK1104
+taskkill /F /IM ime-cursor-indicator.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+
 if not exist build mkdir build
 
 REM Resource compile
