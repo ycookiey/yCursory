@@ -19,9 +19,9 @@ if errorlevel 1 (
 REM C++ compile
 echo Compiling C++ sources...
 cl /nologo /c /O2 /EHsc /std:c++17 /DUNICODE /D_UNICODE /utf-8 ^
-    /I. ^
+    /I. /Isrc ^
     /Fo:build\ ^
-    src\main.cpp src\ime_monitor.cpp src\cursor_manager.cpp src\tray_icon.cpp
+    src\main.cpp src\ime_monitor.cpp src\cursor_manager.cpp src\tray_icon.cpp src\startup_manager.cpp
 if errorlevel 1 (
     echo Compilation failed!
     exit /b 1
@@ -31,9 +31,9 @@ REM Link
 echo Linking...
 link /nologo /OUT:build\ime-cursor-indicator.exe ^
     /SUBSYSTEM:WINDOWS ^
-    build\main.obj build\ime_monitor.obj build\cursor_manager.obj build\tray_icon.obj ^
+    build\main.obj build\ime_monitor.obj build\cursor_manager.obj build\tray_icon.obj build\startup_manager.obj ^
     build\app.res ^
-    imm32.lib shell32.lib user32.lib gdi32.lib kernel32.lib
+    imm32.lib shell32.lib user32.lib gdi32.lib kernel32.lib advapi32.lib
 if errorlevel 1 (
     echo Linking failed!
     exit /b 1

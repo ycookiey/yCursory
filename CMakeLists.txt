@@ -13,6 +13,8 @@ add_executable(${PROJECT_NAME} WIN32
     src/cursor_manager.h
     src/tray_icon.cpp
     src/tray_icon.h
+    src/startup_manager.cpp
+    src/startup_manager.h
     src/resource.h
     resources/app.rc
 )

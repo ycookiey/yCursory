@@ -9,6 +9,7 @@
 
 // メニューID
 #define IDM_EXIT            1001
+#define IDM_STARTUP         1002
 
 // ウィンドウメッセージ
 #define WM_TRAYICON         (WM_USER + 1)

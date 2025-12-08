@@ -2,6 +2,7 @@
 #include "ime_monitor.h"
 #include "cursor_manager.h"
 #include "tray_icon.h"
+#include "startup_manager.h"
 #include "resource.h"
 
 // Global variables
@@ -43,6 +44,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             GetCursorPos(&pt);
             
             HMENU hMenu = CreatePopupMenu();
+            
+            // スタートアップ登録メニュー（チェックマーク付き）
+            UINT startupFlags = MF_STRING;
+            if (StartupManager::IsRegistered()) {
+                startupFlags |= MF_CHECKED;
+            }
+            AppendMenuW(hMenu, startupFlags, IDM_STARTUP, L"スタートアップに登録");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"Exit");
             
             SetForegroundWindow(hwnd);
@@ -55,6 +64,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_COMMAND:
         if (LOWORD(wParam) == IDM_EXIT) {
             PostQuitMessage(0);
+        } else if (LOWORD(wParam) == IDM_STARTUP) {
+            // スタートアップ登録をトグル
+            if (StartupManager::IsRegistered()) {
+                StartupManager::Unregister();
+            } else {
+                StartupManager::Register();
+            }
         }
         return 0;
         
