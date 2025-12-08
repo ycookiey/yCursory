@@ -320,6 +320,27 @@ SYSTEM_CURSORS = [
     ("appstarting", "aero_working.ani", 0, 0),  # .aniは非対応、スキップ
 ]
 
+def save_preview_image(cursor_img: Image.Image, preview_path: str, label: str = ""):
+    """
+    README用のプレビュー画像を生成（暗い背景でグローが見えやすいように）
+    """
+    # 背景サイズ（カーソルより大きくしてグローが見える余白を確保）
+    bg_size = 64
+    bg_color = (30, 30, 35)  # ダークグレー背景
+    
+    preview = Image.new('RGBA', (bg_size, bg_size), (*bg_color, 255))
+    
+    # カーソルを中央に配置
+    cursor_w, cursor_h = cursor_img.size
+    offset_x = (bg_size - cursor_w) // 2
+    offset_y = (bg_size - cursor_h) // 2
+    preview.paste(cursor_img, (offset_x, offset_y), cursor_img)
+    
+    # PNGとして保存
+    preview.save(preview_path, 'PNG')
+    print(f"  Preview: {preview_path}")
+
+
 def process_cursor(name: str, filename: str, default_hotspot_x: int, default_hotspot_y: int) -> bool:
     """
     単一のカーソルを処理してEN/JP版を生成
@@ -365,15 +386,22 @@ def process_cursor(name: str, filename: str, default_hotspot_x: int, default_hot
             else:
                 cursor_32 = cursor_img
         
+        # プレビュー画像用ディレクトリ
+        images_dir = os.path.join(OUTPUT_DIR, "docs", "images")
+        if not os.path.exists(images_dir):
+            os.makedirs(images_dir)
+        
         # 青グロー (EN)
         blue = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3)
         en_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en.cur")
         png_to_cur(blue, en_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(blue, os.path.join(images_dir, f"cursor_{name}_en.png"))
         
         # 赤グロー (JP)
         red = add_glow_to_cursor(cursor_32, (255, 50, 50), glow_size=3)
         jp_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_jp.cur")
         png_to_cur(red, jp_path, hotspot_x=max(2, hotspot_x), hotspot_y=max(2, hotspot_y))
+        save_preview_image(red, os.path.join(images_dir, f"cursor_{name}_jp.png"))
         
         return True
         
