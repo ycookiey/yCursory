@@ -1,0 +1,26 @@
+#include "../src/resource.h"
+#include <windows.h>
+
+// アプリケーションアイコン
+IDI_APP_ICON ICON "app.ico"
+
+// カーソルリソース
+IDC_CURSOR_EN CURSOR "cursor_en.cur"
+IDC_CURSOR_JP CURSOR "cursor_jp.cur"
+
+// バージョン情報
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041104b0"
+        BEGIN
+            VALUE "FileDescription", "IME Cursor Indicator"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "ProductName", "IME Cursor Indicator"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+END
