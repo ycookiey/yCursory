@@ -64,6 +64,7 @@
 #define IDM_STARTUP         1002
 #define IDM_STYLE_LIGHT     1003
 #define IDM_STYLE_HEAVY     1004
+#define IDM_CARET_INDICATOR 1005
 
 // ウィンドウメッセージ
 #define WM_TRAYICON         (WM_USER + 1)
