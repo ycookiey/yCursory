@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-project(ime-cursor-indicator VERSION 1.0.0 LANGUAGES CXX)
+project(yCursory VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Windows GUI ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ (ƒRƒ“ƒ\[ƒ‹”ñ•\Ž¦)
+# Windows GUI ï¿½Aï¿½vï¿½ï¿½ï¿½Pï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ (ï¿½Rï¿½ï¿½ï¿½\ï¿½[ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½)
 add_executable(${PROJECT_NAME} WIN32
     src/main.cpp
     src/ime_monitor.cpp
@@ -19,15 +19,15 @@ add_executable(${PROJECT_NAME} WIN32
     resources/app.rc
 )
 
-# •K—v‚Èƒ‰ƒCƒuƒ‰ƒŠ
+# ï¿½Kï¿½vï¿½Èƒï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½
 target_link_libraries(${PROJECT_NAME} PRIVATE
     imm32      # IME API
-    shell32    # ƒVƒFƒ‹EƒgƒŒƒCƒAƒCƒRƒ“
-    user32     # ƒEƒBƒ“ƒhƒEEƒJ[ƒ\ƒ‹API
-    gdi32      # •`‰æ
+    shell32    # ï¿½Vï¿½Fï¿½ï¿½ï¿½Eï¿½gï¿½ï¿½ï¿½Cï¿½Aï¿½Cï¿½Rï¿½ï¿½
+    user32     # ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½Eï¿½Jï¿½[ï¿½\ï¿½ï¿½API
+    gdi32      # ï¿½`ï¿½ï¿½
 )
 
-# ƒŠƒŠ[ƒXƒrƒ‹ƒhÅ“K‰»
+# ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Xï¿½rï¿½ï¿½ï¿½hï¿½Å“Kï¿½ï¿½
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /O2 /GL)
     target_link_options(${PROJECT_NAME} PRIVATE /LTCG /OPT:REF /OPT:ICF)

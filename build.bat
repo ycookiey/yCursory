@@ -12,7 +12,7 @@ if errorlevel 1 (
 cd /d "%~dp0"
 
 REM Terminate running instance to avoid LNK1104
-taskkill /F /IM ime-cursor-indicator.exe >nul 2>&1
+taskkill /F /IM yCursory.exe >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 if not exist build mkdir build
@@ -40,7 +40,7 @@ if errorlevel 1 (
 
 REM Link
 echo Linking...
-link /nologo /OUT:build\ime-cursor-indicator.exe ^
+link /nologo /OUT:build\yCursory.exe ^
     /SUBSYSTEM:WINDOWS ^
     build\main.obj build\ime_monitor.obj build\cursor_manager.obj build\caret_indicator.obj build\tray_icon.obj build\startup_manager.obj ^
     build\app.res ^
@@ -52,11 +52,6 @@ if errorlevel 1 (
 )
 
 echo.
-echo Build successful: build\ime-cursor-indicator.exe
+echo Build successful: build\yCursory.exe
 echo.
-set /p "LAUNCH=Launch exe now? [Y/n]: "
-if /i "%LAUNCH%"=="n" exit /b 0
-
-echo Launching...
-start build\ime-cursor-indicator.exe
 exit /b 0
