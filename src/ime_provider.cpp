@@ -130,9 +130,12 @@ bool ImeProvider::GetOpenState(ImeState* state) {
     return true;
 }
 
-void ImeProvider::OnForegroundChanged(HWND foreground) {
-    // 担当の知らせが前面の切り替えより先に届くことがあるので、同じ窓なら残す
-    if (g_window && RootOf(foreground) != g_window) {
+void ImeProvider::OnForegroundChanged(HWND eventWindow) {
+    // 前面の切り替えの知らせは遅れて届くことがある (担当開始の後に、その前の窓への切り替えの知らせが届いた実例)。
+    // 知らせの窓ではなく、今の前面の窓で判定する。担当の知らせが切り替えより先に届いた場合も、同じ窓なら残る
+    if (!g_window) return;
+    if (RootOf(GetForegroundWindow()) != g_window) {
+        LOG_DEBUG(L"provider: foreground event window=%p", eventWindow);
         Clear(L"foreground changed");
     }
 }
