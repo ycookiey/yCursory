@@ -14,7 +14,7 @@ namespace {
     UINT g_msgCaret = 0;
     ImeProvider::Callbacks g_callbacks = {};
 
-    HWND g_window = NULL;   // 担当しているウィンドウ (root)。NULLなら担当なし
+    HWND g_window = NULL;   // 担当ウィンドウ。最上位のウィンドウ（root）を入れる。NULLなら担当なし
     int g_open = -1;        // -1: 知らされていない、0: オフ、1: オン
 
     HWND RootOf(HWND hwnd) {
@@ -28,7 +28,7 @@ namespace {
         LOG_INFO(L"provider: end (%s)", reason);
     }
 
-    // wParam・lParamに16ビットずつ詰めた座標を取り出す（32ビットのプロセスから送られても同じ形）
+    // wParam・lParamに16ビットずつ詰めた座標を取り出す。32ビットのプロセスから送られても同じ形で届く
     void Unpack(WPARAM w, LPARAM l, RECT* rect) {
         DWORD a = (DWORD)w;
         DWORD b = (DWORD)l;
@@ -100,7 +100,7 @@ bool ImeProvider::Start(HINSTANCE hInstance, const Callbacks& callbacks) {
         LOG_ERROR(L"provider: CreateWindowEx failed (%lu)", GetLastError());
         return false;
     }
-    // 権限の低いプロセス（サンドボックスのアプリの中のIME等）からも届くようにする
+    // サンドボックスのアプリの中のIMEなど、権限の低いプロセスからのメッセージを許可する
     ChangeWindowMessageFilterEx(g_receiver, g_msgFocus, MSGFLT_ALLOW, NULL);
     ChangeWindowMessageFilterEx(g_receiver, g_msgOpen, MSGFLT_ALLOW, NULL);
     ChangeWindowMessageFilterEx(g_receiver, g_msgCaret, MSGFLT_ALLOW, NULL);
@@ -130,8 +130,8 @@ bool ImeProvider::GetOpenState(ImeState* state) {
 }
 
 void ImeProvider::OnForegroundChanged(HWND eventWindow) {
-    // 前面の切り替えの知らせは遅れて届くことがある（担当開始の後に、その前のウィンドウへの切り替えの知らせが届いた実例）。
-    // 知らせのウィンドウではなく、今の前面のウィンドウで判定する。担当の知らせが切り替えより先に届いた場合も、同じウィンドウなら残る
+    // 前面のウィンドウの切り替えの通知は遅れて届くことがある。担当開始の後に、担当開始より前のウィンドウへの切り替えの通知が届いた実例がある。
+    // 通知が指すウィンドウではなく、今の前面のウィンドウで判定する。担当開始の知らせが切り替えの通知より先に届いた場合も、同じウィンドウなら担当が残る
     if (!g_window) return;
     if (RootOf(GetForegroundWindow()) != g_window) {
         LOG_DEBUG(L"provider: foreground event window=%p", eventWindow);

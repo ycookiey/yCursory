@@ -194,7 +194,7 @@ bool CaretIndicator::CreateIndicatorWindow() {
         return false;
     }
 
-    // スクリーンショットに写らないように設定 (WDA_EXCLUDEFROMCAPTURE = 0x00000011)
+    // スクリーンショットに写らないように設定(WDA_EXCLUDEFROMCAPTURE = 0x00000011)
     // 定数が未定義の場合に備えて直接値を使用するか、定義を確認するが、
     // ここでは安全のため定数がなければ定義するようにコードを追加するアプローチではなく、
     // 既存のSDKで定義されていることを期待しつつ、マジックナンバーは避けたいが
@@ -284,7 +284,7 @@ void CaretIndicator::SetState(ImeState state) {
 
 void CaretIndicator::ShowAtPhysical(POINT physical) {
     if (!m_enabled || m_hwnd == NULL) return;
-    // このプロセスはDPI非対応なので、物理ピクセルを自分の座標に直す（拡大率100%なら同じ値）
+    // yCursoryはDPI非対応なので、物理ピクセルをyCursoryの座標に変換する。拡大率が100%なら値は変わらない
     POINT pos = physical;
     PhysicalToLogicalPointForPerMonitorDPI(m_hwnd, &pos);
     m_lastCaretPos = pos;
@@ -308,7 +308,7 @@ void CaretIndicator::UpdateDisplay() {
     // キャレットの実際の位置を即座に表示（LERPなし、軌跡なし）
     m_currentDisplayPos = m_lastCaretPos;
 
-    // 位置も状態も前回描いたままなら何もしない（最前面のウィンドウを毎回動かし描き直すと、前面のアプリの描画に響く）
+    // 位置も状態も前回描いたままなら何もしない。最前面のウィンドウを毎回動かして描き直すと、前面のアプリの描画に響くため
     if (m_visible && m_rendered
         && m_renderedPos.x == m_currentDisplayPos.x && m_renderedPos.y == m_currentDisplayPos.y
         && m_renderedState == m_currentState) {

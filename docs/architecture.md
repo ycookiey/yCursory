@@ -47,8 +47,8 @@ sequenceDiagram
     Cursor->>Win: LoadCursor()
     App->>Cursor: SetCursorForState(初期, force=true)
     
-    loop 16msごと（前面のウィンドウでキャレットが取れる間だけ）
-        alt IMEから知らされている（担当中）
+    loop 前面のウィンドウでキャレットが取れる間、16msごと
+        alt 担当中で、IMEから知らされている
             App->>App: ImeProvider::GetOpenState()
         else 知らされていない
             App->>IME: GetCurrentState()
@@ -57,7 +57,7 @@ sequenceDiagram
             IME-->>App: English / Japanese
         end
         App->>Cursor: SetCursorForState()
-        Cursor->>Win: SetSystemCursor()（状態が変わったときだけ）
+        Cursor->>Win: 状態が変わったときだけSetSystemCursor()
     end
 
     Note over App: キャレットが1秒取れなければタイマーを止める
@@ -134,7 +134,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A["aero_arrow.cur<br/>（Windows標準）"] --> B["read_cur_file()"]
+    A["Windows標準の<br/>aero_arrow.cur"] --> B["read_cur_file()"]
     B --> C["PIL Image<br/>128x128"]
     C --> D["resize()<br/>32x32"]
     D --> E["add_glow()<br/>青/赤グロー"]
@@ -172,5 +172,5 @@ mindmap
 |------|-----|
 | EXE | 約120KB |
 | メモリ | 約1.4MB |
-| ポーリング | 16ms（キャレットが取れるウィンドウが前面の間だけ。取れなければ1秒で止まり、ウィンドウ・フォーカスの切り替えで再開） |
+| ポーリング | 16ms。キャレットが取れるウィンドウが前面にある間だけ動く。キャレットが1秒取れなければ止まり、ウィンドウかフォーカスの切り替えで再開する |
 | カーソルサイズ | 32x32 |

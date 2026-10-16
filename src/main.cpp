@@ -15,13 +15,13 @@ static TrayIcon* g_trayIcon = nullptr;
 static HWND g_hwnd = NULL;
 
 #define TIMER_TICK 1
-#define TICK_MS 16                 // IME状態とキャレット位置の確認 (60fps)
-#define GRACE_MS 1000              // キャレットが取れないまま、これだけ続いたら止める
+#define TICK_MS 16                 // IME状態とキャレット位置を確認する間隔。60fpsに当たる
+#define GRACE_MS 1000              // キャレットが取れないまま1秒続いたら、確認を止める
 
 static bool g_active = false;
-static DWORD g_graceStart = 0;      // キャレットが取れなくなった（または再開した）時刻
+static DWORD g_graceStart = 0;      // キャレットが取れなくなった時刻か、確認を再開した時刻
 static bool g_caretSeen = false;    // 直近の確認でキャレットが取れたか
-static bool g_textTarget = false;   // 表示が無効のとき: 再開後に入力先が見つかったか（見つかれば以後は探さない）
+static bool g_textTarget = false;   // 表示が無効のとき: 再開後に入力先が見つかったか。見つかれば以後は探さない
 static HWINEVENTHOOK g_foregroundHook = NULL;
 static HWINEVENTHOOK g_focusHook = NULL;
 
@@ -65,7 +65,7 @@ void LoadSettings() {
     }
 }
 
-// ログ用: ウィンドウのプロセスの実行ファイル名（取れなければ "?"）
+// ログ用: ウィンドウのプロセスの実行ファイル名。取れなければ"?"
 static void ProcessNameOf(HWND hwnd, wchar_t* out, DWORD outLen, DWORD* pidOut) {
     wcscpy_s(out, outLen, L"?");
     DWORD pid = 0;
@@ -114,12 +114,12 @@ static void Pause(const wchar_t* reason) {
     if (!g_active) return;
     KillTimer(g_hwnd, TIMER_TICK);
     g_active = false;
-    // 位置も捨てる（残すと、同じウィンドウでフォーカスの知らせで再開したとき、古い位置にキャレットインジケーターが出る）
+    // タイマーを止めるだけでなく、覚えている位置も破棄する。位置を残すと、同じウィンドウでフォーカスの切り替えの通知で再開したとき、古い位置にキャレットインジケーターが出る
     if (g_caretIndicator) g_caretIndicator->ResetCaret();
     LOG_INFO(L"pause: %s", reason);
 }
 
-// newWindow: 前面のウィンドウが変わった（前のウィンドウのキャレット位置を捨てる）
+// newWindow: 前面のウィンドウが変わった。trueなら前のウィンドウのキャレット位置を破棄する
 static void Resume(const wchar_t* reason, bool newWindow) {
     g_graceStart = GetTickCount();
     g_caretSeen = false;
@@ -134,7 +134,7 @@ static void Resume(const wchar_t* reason, bool newWindow) {
 static void ApplyState(ImeState state) {
     g_cursorManager->SetCursorForState(state);
 
-    // トレイのツールチップは、状態が変わったときだけ書き換える（書き換えはexplorerへの通知になる）
+    // トレイのツールチップは、状態が変わったときだけ書き換える。書き換えるたびにexplorerへ通知が飛ぶ
     static int tooltipState = -1;
     if (g_trayIcon && (int)state != tooltipState) {
         tooltipState = (int)state;
@@ -142,7 +142,7 @@ static void ApplyState(ImeState state) {
     }
 }
 
-// タイマーが止まっていても色を変えるため、知らせを受けた時点で当てる
+// タイマーが止まっていても、知らせを受けた時点でカーソルとキャレットインジケーターの色を変える
 static void OnProviderOpen(ImeState state) {
     ApplyState(state);
     if (g_caretIndicator) g_caretIndicator->SetState(state);
@@ -170,7 +170,7 @@ static void Tick() {
         caretFound = g_caretIndicator->UpdatePosition(state);
         g_caretIndicator->UpdateDisplay();
     } else if (!g_textTarget) {
-        // 表示が無効なら位置は要らない。止めるかの判断のため、再開の直後に入力先の有無だけ調べる
+        // 表示が無効なら位置は不要。止めるかの判断のため、再開の直後に入力先の有無だけ調べる
         caretFound = g_caretIndicator->Probe();
         g_textTarget = caretFound;
     } else {
@@ -186,13 +186,13 @@ static void Tick() {
         g_caretSeen = false;
         g_graceStart = GetTickCount();
     }
-    // 再開のきっかけを受け取れないときは止めない（止めたら戻れなくなる）
+    // 再開のきっかけを受け取れないときは止めない。止めると再開できない
     if (GetTickCount() - g_graceStart >= GRACE_MS && g_foregroundHook && g_focusHook) {
         Pause(L"no caret");
     }
 }
 
-// OSからの知らせ（WINEVENT_OUTOFCONTEXTなので、このスレッドのメッセージループの中で呼ばれる）。
+// OSからの通知。WINEVENT_OUTOFCONTEXTなので、SetWinEventHookを呼んだスレッドのメッセージループの中で呼ばれる。
 // 前面のアプリへの問い合わせは、次のタイマーまで遅らせる
 static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG, LONG, DWORD, DWORD) {
     if (event == EVENT_SYSTEM_FOREGROUND) {
@@ -347,13 +347,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     LoadSettings(); // 設定読み込み（キャレットインジケーターの設定も含む）
     ImeState initialState = g_imeMonitor->GetCurrentState();
-    // 状態が前回と同じでも、起動時は必ずカーソルを設定する (force=true)
+    // 状態が前回と同じでも、起動時はforce=trueで必ずカーソルを設定する
     g_cursorManager->SetCursorForState(initialState, true);
 
     ImeProvider::Callbacks providerCallbacks = { OnProviderOpen, OnProviderCaret };
     ImeProvider::Start(hInstance, providerCallbacks);
 
-    // 再開のきっかけ。範囲で登録すると間の大量のイベントも届くので、1種類ずつ登録する
+    // 再開のきっかけ。範囲で登録すると間にある大量のイベントまで届くので、1種類ずつ登録する
     g_foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL, OnWinEvent,
         0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     g_focusHook = SetWinEventHook(EVENT_OBJECT_FOCUS, EVENT_OBJECT_FOCUS, NULL, OnWinEvent,

@@ -10,7 +10,7 @@ Windows 11でマウスカーソル周囲に、IMEの英字・日本語の状態�
 - **キャレットインジケーター**
   - テキスト入力位置（キャレット）にもIME状態を表示
   - 60fps高速追従、遅延ゼロ
-  - Notepad、Word、Excel、Vivaldiなど複数のアプリに対応
+  - メモ帳、Word、Excel、Vivaldiなど複数のアプリで動く
 - IMEや外部ツールからIME状態とキャレット位置を受け取れる。仕様は[IME状態の受け取り](docs/ime-state-protocol.md)
 - システムトレイ常駐
 - 軽量。EXEは約120KB、メモリは約1.4MB
@@ -37,18 +37,18 @@ scoop install yscoopy/ycursory
 
 `%LOCALAPPDATA%\yCursory\logs\yCursory.log`に、起動・終了、確認の停止・再開、前面のアプリ、キャレットの取得方法、IMEからの知らせの担当開始・終了、エラーを、変わったときだけ書く。キャレットの取得方法は、GUIThreadInfo、IMM32、UIAutomation、TSF、noneのいずれかで書く。1MBを超えると`yCursory.1.log`に退避する。
 
-レベルはレジストリ`HKCU\Software\yCursory`の`LogLevel`（DWORD）で変える: 0=なし、1=error、2=warn、3=info、4=debug。既定は3。debugでは、IMEのオン・オフの変化と、IMEから受けたオン・オフの知らせも書く。
+レベルはレジストリ`HKCU\Software\yCursory`のDWORD値`LogLevel`で変える: 0=なし、1=error、2=warn、3=info、4=debug。既定は3。debugでは、IMEのオン・オフの変化と、IMEから受けたオン・オフの知らせも書く。
 
 ## 既知の制限
 
-- ゲームや端末など、キャレットを取得できないアプリが前面にある間は、負荷を抑えるためIME状態の確認を止める。止まっている間にIMEを切り替えても、次にウィンドウかフォーカスが切り替わるまでカーソルの色は変わらない。IMEが[IME状態の受け取り](docs/ime-state-protocol.md)の方法で状態を送る場合は、止まっていても色が変わる。
+- ゲームや端末など、キャレットを取れないアプリが前面にある間は、負荷を抑えるためIME状態の確認を止める。止まっている間にIMEを切り替えても、次にウィンドウかフォーカスが切り替わるまでカーソルの色は変わらない。IMEが[IME状態の受け取り](docs/ime-state-protocol.md)の方法で状態を送る場合は、止まっていても色が変わる。
 
 ## Glow Style（グロースタイル）
 
 シーンに合わせて選べる2種類のスタイルがある。
 
-- **Heavy（右下強調）**: 既定。右下方向に強いグローを加え、視認性を高めたスタイル。
-- **Light（対称）**: 全方向に均等な柔らかいグロー。
+- **Heavy**: 既定。右下方向に強いグローを加え、視認性を高めたスタイル。
+- **Light**: 全方向に均等な柔らかいグロー。
 
 ## カーソル一覧
 

@@ -51,10 +51,10 @@ private:
     // 各カーソル種類に対応するOCR ID
     static const DWORD s_ocrIds[CURSOR_TYPE_COUNT];
     
-    HCURSOR m_cursorsEnLight[CURSOR_TYPE_COUNT];  // 英字モード用カーソル (Light)
-    HCURSOR m_cursorsJpLight[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル (Light)
-    HCURSOR m_cursorsEnHeavy[CURSOR_TYPE_COUNT];  // 英字モード用カーソル (Heavy)
-    HCURSOR m_cursorsJpHeavy[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル (Heavy)
+    HCURSOR m_cursorsEnLight[CURSOR_TYPE_COUNT];  // 英字モード用カーソル(Light)
+    HCURSOR m_cursorsJpLight[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル(Light)
+    HCURSOR m_cursorsEnHeavy[CURSOR_TYPE_COUNT];  // 英字モード用カーソル(Heavy)
+    HCURSOR m_cursorsJpHeavy[CURSOR_TYPE_COUNT];  // 日本語モード用カーソル(Heavy)
     HCURSOR m_originals[CURSOR_TYPE_COUNT];       // 元のカーソル
     
     ImeState m_currentState;

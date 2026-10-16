@@ -1,7 +1,7 @@
 #pragma once
 #include <windows.h>
 
-// 呼び出し側は、状態が変わったときだけ書く（常に動く経路で書くと、それ自体が負荷になる）
+// 呼び出し側は、状態が変わったときだけ書く。常に動く経路で書くと、ログの書き込みが負荷を増やす
 enum class LogLevel : DWORD {
     Off = 0,
     Error = 1,

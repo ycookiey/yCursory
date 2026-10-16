@@ -43,7 +43,7 @@ ImeState ImeMonitor::GetStateForForegroundWindow() {
     }
     
     // IMEの開閉状態を取得（WM_IME_CONTROLメッセージを送信）
-    // 前面のアプリのスレッドが答えるまで待つ呼び出しなので、上限を付ける（固まったアプリに引きずられない）
+    // 前面のアプリのスレッドが答えるまで待つ呼び出しなので、上限を付け、固まったアプリに引きずられないようにする
     DWORD_PTR imeOpen = 0;
     if (!SendMessageTimeoutW(imeWnd, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0,
             SMTO_ABORTIFHUNG | SMTO_NORMAL, 50, &imeOpen)) {
