@@ -1,69 +1,54 @@
 # yCursory - IME Cursor Indicator
 
-Windows 11でマウスカーソル周囲にIME状態（英字/日本語）をグロー色で表示する軽量常駐ツール。
+Windows 11でマウスカーソル周囲に、IMEの英字・日本語の状態をグロー色で表示する軽量常駐ツール。
 
 ## 特徴
 
 - **マウスカーソルグロー**
   - 英字モード: 青グロー
   - 日本語モード: 赤グロー
-- **キャレット（テキストカーソル）インジケーター**
-  - テキスト入力位置にもIME状態を表示
+- **キャレットインジケーター**
+  - テキスト入力位置（キャレット）にもIME状態を表示
   - 60fps高速追従、遅延ゼロ
-  - 複数アプリ対応（Notepad、Word、Excel、Vivaldi等）
+  - Notepad、Word、Excel、Vivaldiなど複数のアプリに対応
+- IMEや外部ツールからIME状態とキャレット位置を受け取れる。仕様は[IME状態の受け取り](docs/ime-state-protocol.md)
 - システムトレイ常駐
-- 軽量（EXE: 約120KB, メモリ: 約1.4MB）
+- 軽量。EXEは約120KB、メモリは約1.4MB
 
-## 動く間と止まる間
+## インストール
 
-IME 状態とキャレット位置の確認 (16ms ごと) は、前面の窓でキャレットが取れる間だけ動く。
+[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`を取得するか、Scoopで入れる。
 
-- キャレットが 1 秒続けて取れなければ止まる (ゲーム、キャレットを持たないアプリ、デスクトップ等)。止まっている間は何もしない
-- 前面の窓の切り替えかフォーカスの移動を OS から知らされると (SetWinEventHook) 再開する
-- キャレットインジケーターを無効にしている場合は、再開の直後だけ入力先を探し、見つかれば以後は IME 状態だけを確認する
-- 止まっている間に IME を切り替えても、次に窓かフォーカスが動くまでカーソルの色は変わらない。キャレットを取れないアプリ (端末等) ではこうなる。IME が状態を知らせてくる場合 (下の「IME から状態を受け取る」) は、止まっていても色が変わる
+```powershell
+scoop bucket add yscoopy https://github.com/ycookiey/yscoopy
+scoop install yscoopy/ycursory
+```
 
-## IME から状態を受け取る (プロトコル v1)
+## 使い方
 
-IME (または IME の状態を知っている別のツール) が、オン・オフとキャレットの位置を yCursory に知らせられる。知らせを送る IME が前面の窓を担当している間は、yCursory は前面のアプリに IME 状態を問い合わせず、知らせだけでカーソルの色を変える。キャレットを取れないアプリ (端末等) でも、知らせがあれば色が追従する。送る IME がいなければ、従来どおり自分で調べる。
-
-### 送り先
-
-- `FindWindowExW(HWND_MESSAGE, NULL, L"yCursory.ImeStateReceiver.v1", NULL)` で見つかる窓へ `PostMessageW` で送る。`SendMessage` は使わない (yCursory を待たない)
-- メッセージ番号は `RegisterWindowMessageW` に次の名前を渡して得る
-
-| 名前 | wParam | lParam | 意味 |
-|---|---|---|---|
-| `yCursory.ImeState.v1.Focus` | 窓の HWND | 1: 担当開始 / 0: 担当終了 | この窓の入力を担当し始めた・やめた。HWND は子窓でもよい (root で比べる)。0 や存在しない窓は無視される |
-| `yCursory.ImeState.v1.Open` | 1: オン (日本語入力) / 0: オフ | 0 | 担当中の窓のオン・オフ |
-| `yCursory.ImeState.v1.Caret` | `MAKELONG(left, top)` | `MAKELONG(right, bottom)` | キャレット (変換中の文字列) の位置。物理ピクセル、各 16 ビット符号付き。wParam・lParam とも `0x80008000` なら「位置なし」 |
-
-各値は 32 ビットに収まるので、32 ビットのプロセスからも送れる。
-
-### 送る側の決まり
-
-- 担当開始 (`Focus` の 1) を送った直後に、今のオン・オフを `Open` で送る (yCursory は担当開始の時点の状態を知らない)
-- 変換が終わったら `Caret` の「位置なし」を送る (送らないと、最後の位置に光が残る)
-- `Caret` は変わるたびに全部送らなくてよい。まとめて最後の 1 件だけでよい
-
-### yCursory 側の扱い
-
-- 担当は、前面の窓の root と担当の窓の root が同じ間だけ有効。前面が別の窓に変わると失効し、送る側が改めて担当開始を送るまで、従来どおり自分で調べる
-- 自分でキャレットを取れている窓では、光の位置は自分で取った値を使う。`Caret` の位置を使うのは、自分では取れず止まっている間だけ
-- 受け口は誰からの知らせも受け付ける (権限の低いプロセスからも届くよう許可している)。偽の知らせで変わるのは、カーソルの色と光の表示だけ
+1. `yCursory.exe`を実行する。ビルドした場合は`build\yCursory.exe`を実行する
+2. システムトレイにアイコンが表示される
+3. **グロースタイル切り替え**: トレイアイコンを右クリック → **Glow Style** → **Heavy / Light**
+4. **キャレットインジケーター**: トレイアイコンを右クリック → **Caret Indicator**。チェックを付けると有効、外すと無効になる
+5. **スタートアップ登録**: トレイアイコンを右クリック → スタートアップに登録
+6. **終了**: トレイアイコンを右クリック → Exit
 
 ## ログ
 
-`%LOCALAPPDATA%\yCursory\logs\yCursory.log` に、起動・終了、止まった・再開した、前面のアプリ、キャレットの取得方法 (GUIThreadInfo / IMM32 / UIAutomation / TSF / none) が変わったときだけ書く。1 MB を超えると `yCursory.1.log` に退避する。
+`%LOCALAPPDATA%\yCursory\logs\yCursory.log`に、起動・終了、確認の停止・再開、前面のアプリ、キャレットの取得方法、IMEからの知らせの担当開始・終了、エラーを、変わったときだけ書く。キャレットの取得方法は、GUIThreadInfo、IMM32、UIAutomation、TSF、noneのいずれかで書く。1MBを超えると`yCursory.1.log`に退避する。
 
-レベルはレジストリ `HKCU\Software\yCursory` の `LogLevel` (DWORD) で変える: 0=なし 1=error 2=warn 3=info (既定) 4=debug (IME のオン・オフも書く)。
+レベルはレジストリ`HKCU\Software\yCursory`の`LogLevel`（DWORD）で変える: 0=なし、1=error、2=warn、3=info、4=debug。既定は3。debugでは、IMEのオン・オフの変化と、IMEから受けたオン・オフの知らせも書く。
 
-## Glow Style (グロースタイル)
+## 既知の制限
 
-シーンに合わせて選択できる2種類のスタイルを用意しました。
+- ゲームや端末など、キャレットを取得できないアプリが前面にある間は、負荷を抑えるためIME状態の確認を止める。止まっている間にIMEを切り替えても、次にウィンドウかフォーカスが切り替わるまでカーソルの色は変わらない。IMEが[IME状態の受け取り](docs/ime-state-protocol.md)の方法で状態を送る場合は、止まっていても色が変わる。
 
-- **Heavy (右下強調)**: デフォルト。右下方向に強いグローを追加し、視認性を高めたスタイル。
-- **Light (対称)**: 従来のデザイン。全方向に均等な柔らかいグロー。
+## Glow Style（グロースタイル）
+
+シーンに合わせて選べる2種類のスタイルがある。
+
+- **Heavy（右下強調）**: 既定。右下方向に強いグローを加え、視認性を高めたスタイル。
+- **Light（対称）**: 全方向に均等な柔らかいグロー。
 
 ## カーソル一覧
 
@@ -85,26 +70,18 @@ IME (または IME の状態を知っている別のツール) が、オン・�
 ## ビルド
 
 ```powershell
-# Visual Studio Build Tools が必要
+# Visual Studio 2019 Build Toolsが必要
 .\build.bat
 ```
-
-## 使い方
-
-1. `build\ime-cursor-indicator.exe` を実行
-2. システムトレイにアイコンが表示される
-3. **グロースタイル切り替え**: トレイアイコンを右クリック → **Glow Style** → **Heavy / Light**
-4. **キャレットインジケーター**: トレイアイコンを右クリック → **Caret Indicator** （チェックでON/OFF）
-5. **スタートアップ登録**: トレイアイコンを右クリック → スタートアップに登録
-6. **終了**: トレイアイコンを右クリック → Exit
 
 ## ファイル構成
 
 ```
 yCursory/
-├── src/                    # C++ ソースコード
+├── src/                    # C++ソースコード
 ├── resources/              # カーソル・アイコンファイル
 ├── docs/                   # ドキュメント
+│   ├── ime-state-protocol.md  # IME状態の受け取り
 │   └── architecture.md        # アーキテクチャ図
 ├── build.bat               # ビルドスクリプト
 └── create_from_system_cursor.py  # カーソル生成
@@ -112,4 +89,5 @@ yCursory/
 
 ## ドキュメント
 
-- [アーキテクチャ](docs/architecture.md) - 設計図（mermaid）
+- [アーキテクチャ](docs/architecture.md) - mermaidの設計図
+- [IME状態の受け取り](docs/ime-state-protocol.md) - プロトコルv1で、IMEや外部ツールからyCursoryへ状態を送る方法

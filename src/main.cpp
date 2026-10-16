@@ -8,33 +8,27 @@
 #include "ime_provider.h"
 #include "resource.h"
 
-// Global variables
 static ImeMonitor* g_imeMonitor = nullptr;
 static CursorManager* g_cursorManager = nullptr;
 static CaretIndicator* g_caretIndicator = nullptr;
 static TrayIcon* g_trayIcon = nullptr;
 static HWND g_hwnd = NULL;
 
-// Timer
-// 動くのは「キャレットのある窓」が前面にある間だけ。キャレットが GRACE_MS 続けて取れなければタイマーを止め、
-// 前面の窓の切り替えかフォーカスの移動を OS から知らされたときに再開する (ゲーム等では止まったままになる)
 #define TIMER_TICK 1
-#define TICK_MS 16                 // IME 状態とキャレット位置の確認 (60fps)
+#define TICK_MS 16                 // IME状態とキャレット位置の確認 (60fps)
 #define GRACE_MS 1000              // キャレットが取れないまま、これだけ続いたら止める
 
-static bool g_active = false;       // タイマーが動いているか
-static DWORD g_graceStart = 0;      // キャレットが取れなくなった (または再開した) 時刻
+static bool g_active = false;
+static DWORD g_graceStart = 0;      // キャレットが取れなくなった（または再開した）時刻
 static bool g_caretSeen = false;    // 直近の確認でキャレットが取れたか
-static bool g_textTarget = false;   // 表示が無効のとき: 再開後に入力先が見つかったか (見つかれば以後は探さない)
+static bool g_textTarget = false;   // 表示が無効のとき: 再開後に入力先が見つかったか（見つかれば以後は探さない）
 static HWINEVENTHOOK g_foregroundHook = NULL;
 static HWINEVENTHOOK g_focusHook = NULL;
 
-// Registry Key
 const wchar_t* REG_KEY_PATH = L"Software\\yCursory";
 const wchar_t* REG_VALUE_STYLE = L"GlowStyle";
 const wchar_t* REG_VALUE_CARET_ENABLED = L"CaretIndicatorEnabled";
 
-// Settings
 void SaveSettings() {
     HKEY hKey;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, REG_KEY_PATH, 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
@@ -71,7 +65,7 @@ void LoadSettings() {
     }
 }
 
-// ログ用: 窓のプロセスの実行ファイル名 (取れなければ "?")
+// ログ用: ウィンドウのプロセスの実行ファイル名（取れなければ "?"）
 static void ProcessNameOf(HWND hwnd, wchar_t* out, DWORD outLen, DWORD* pidOut) {
     wcscpy_s(out, outLen, L"?");
     DWORD pid = 0;
@@ -88,7 +82,6 @@ static void ProcessNameOf(HWND hwnd, wchar_t* out, DWORD outLen, DWORD* pidOut) 
     CloseHandle(process);
 }
 
-// ログ: 前面の窓・IME 状態・キャレットの取得方法が変わったときだけ書く
 static void LogChanges(ImeState state) {
     static HWND lastForeground = NULL;
     static int lastState = -1;
@@ -121,12 +114,12 @@ static void Pause(const wchar_t* reason) {
     if (!g_active) return;
     KillTimer(g_hwnd, TIMER_TICK);
     g_active = false;
-    // 位置も捨てる (残すと、同じ窓でフォーカスの知らせで再開したとき、古い位置に光が出る)
+    // 位置も捨てる（残すと、同じウィンドウでフォーカスの知らせで再開したとき、古い位置にキャレットインジケーターが出る）
     if (g_caretIndicator) g_caretIndicator->ResetCaret();
     LOG_INFO(L"pause: %s", reason);
 }
 
-// newWindow: 前面の窓が変わった (前の窓のキャレット位置を捨てる)
+// newWindow: 前面のウィンドウが変わった（前のウィンドウのキャレット位置を捨てる）
 static void Resume(const wchar_t* reason, bool newWindow) {
     g_graceStart = GetTickCount();
     g_caretSeen = false;
@@ -138,11 +131,10 @@ static void Resume(const wchar_t* reason, bool newWindow) {
     LOG_INFO(L"resume: %s", reason);
 }
 
-// カーソルの色とトレイのツールチップに IME 状態を当てる
 static void ApplyState(ImeState state) {
     g_cursorManager->SetCursorForState(state);
 
-    // トレイのツールチップは、状態が変わったときだけ書き換える (書き換えは explorer への通知になる)
+    // トレイのツールチップは、状態が変わったときだけ書き換える（書き換えはexplorerへの通知になる）
     static int tooltipState = -1;
     if (g_trayIcon && (int)state != tooltipState) {
         tooltipState = (int)state;
@@ -150,13 +142,13 @@ static void ApplyState(ImeState state) {
     }
 }
 
-// 担当中の IME からオン・オフを知らされた (タイマーが止まっていても、ここで色が変わる)
+// タイマーが止まっていても色を変えるため、知らせを受けた時点で当てる
 static void OnProviderOpen(ImeState state) {
     ApplyState(state);
     if (g_caretIndicator) g_caretIndicator->SetState(state);
 }
 
-// 担当中の IME から位置を知らされた。自分でキャレットを取れている間 (タイマーが動いている間) は、自分の値を使う
+// g_activeの間は自分でキャレットを取れているので、知らせの位置は使わない
 static void OnProviderCaret(bool hasPosition, RECT physical) {
     if (g_active || !g_caretIndicator) return;
     if (hasPosition) {
@@ -167,7 +159,6 @@ static void OnProviderCaret(bool hasPosition, RECT physical) {
 }
 
 static void Tick() {
-    // 担当中の IME から知らされていれば、前面のアプリに問い合わせない
     ImeState state;
     if (!ImeProvider::GetOpenState(&state)) {
         state = g_imeMonitor->GetCurrentState();
@@ -179,7 +170,7 @@ static void Tick() {
         caretFound = g_caretIndicator->UpdatePosition(state);
         g_caretIndicator->UpdateDisplay();
     } else if (!g_textTarget) {
-        // 表示が無効なら、再開の直後だけ入力先を探す。見つかれば、以後は IME の状態だけを見る
+        // 表示が無効なら位置は要らない。止めるかの判断のため、再開の直後に入力先の有無だけ調べる
         caretFound = g_caretIndicator->Probe();
         g_textTarget = caretFound;
     } else {
@@ -195,14 +186,14 @@ static void Tick() {
         g_caretSeen = false;
         g_graceStart = GetTickCount();
     }
-    // 再開のきっかけを受け取れないときは止めない (止めたら戻れなくなる)
+    // 再開のきっかけを受け取れないときは止めない（止めたら戻れなくなる）
     if (GetTickCount() - g_graceStart >= GRACE_MS && g_foregroundHook && g_focusHook) {
         Pause(L"no caret");
     }
 }
 
-// OS からの知らせ (WINEVENT_OUTOFCONTEXT なので、このスレッドのメッセージループの中で呼ばれる)。
-// ここでは再開の印を付けるだけにし、問い合わせは次のタイマーで行う
+// OSからの知らせ（WINEVENT_OUTOFCONTEXTなので、このスレッドのメッセージループの中で呼ばれる）。
+// 前面のアプリへの問い合わせは、次のタイマーまで遅らせる
 static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG, LONG, DWORD, DWORD) {
     if (event == EVENT_SYSTEM_FOREGROUND) {
         ImeProvider::OnForegroundChanged(hwnd);
@@ -212,11 +203,10 @@ static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG, LON
     }
 }
 
-// Window procedure
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CREATE:
-        // タイマーは、部品の初期化が終わってから WinMain で始める
+        // タイマーは、部品の初期化が終わってからWinMainで始める
         return 0;
 
     case WM_TIMER:
@@ -227,7 +217,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     case WM_TRAYICON:
         if (lParam == WM_RBUTTONUP) {
-            // Show context menu
             POINT pt;
             GetCursorPos(&pt);
             
@@ -309,7 +298,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     Logger::Init(REG_KEY_PATH);
     LOG_INFO(L"start (pid=%u)", GetCurrentProcessId());
 
-    // Register window class
     WNDCLASSEXW wc = {};
     wc.cbSize = sizeof(WNDCLASSEXW);
     wc.lpfnWndProc = WndProc;
@@ -321,7 +309,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 1;
     }
     
-    // Create hidden window
     g_hwnd = CreateWindowExW(
         0, L"ImeCursorIndicator", L"IME Cursor Indicator",
         0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL
@@ -332,7 +319,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 1;
     }
     
-    // Initialize components
     g_imeMonitor = new ImeMonitor();
     g_cursorManager = new CursorManager();
     g_caretIndicator = new CaretIndicator();
@@ -359,16 +345,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         MessageBoxW(NULL, L"Failed to create tray icon", L"Error", MB_ICONERROR);
     }
 
-    // Set initial state (force=true to ensure cursor is set)
     LoadSettings(); // 設定読み込み（キャレットインジケーターの設定も含む）
     ImeState initialState = g_imeMonitor->GetCurrentState();
+    // 状態が前回と同じでも、起動時は必ずカーソルを設定する (force=true)
     g_cursorManager->SetCursorForState(initialState, true);
 
-    // IME から状態を知らせてもらう受け口 (送ってくる IME がいなければ何も起きない)
     ImeProvider::Callbacks providerCallbacks = { OnProviderOpen, OnProviderCaret };
     ImeProvider::Start(hInstance, providerCallbacks);
 
-    // 再開のきっかけ。範囲で登録すると間の大量のイベントも届くので、1 種類ずつ登録する
+    // 再開のきっかけ。範囲で登録すると間の大量のイベントも届くので、1種類ずつ登録する
     g_foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL, OnWinEvent,
         0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     g_focusHook = SetWinEventHook(EVENT_OBJECT_FOCUS, EVENT_OBJECT_FOCUS, NULL, OnWinEvent,
@@ -378,7 +363,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     }
     Resume(L"start", true);
 
-    // Message loop
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
@@ -390,7 +374,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImeProvider::Stop();
     LOG_INFO(L"exit");
 
-    // Cleanup
     delete g_trayIcon;
     delete g_caretIndicator;
     delete g_cursorManager;

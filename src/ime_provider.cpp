@@ -6,7 +6,6 @@ namespace {
     const wchar_t* MSG_FOCUS_NAME = L"yCursory.ImeState.v1.Focus";
     const wchar_t* MSG_OPEN_NAME = L"yCursory.ImeState.v1.Open";
     const wchar_t* MSG_CARET_NAME = L"yCursory.ImeState.v1.Caret";
-    // Caret の「位置なし」: wParam と lParam の両方がこの値
     const DWORD NO_POSITION = 0x80008000;
 
     HWND g_receiver = NULL;
@@ -15,8 +14,8 @@ namespace {
     UINT g_msgCaret = 0;
     ImeProvider::Callbacks g_callbacks = {};
 
-    HWND g_window = NULL;   // 担当している窓 (root)。NULL なら担当なし
-    int g_open = -1;        // -1: 知らされていない 0: オフ 1: オン
+    HWND g_window = NULL;   // 担当しているウィンドウ (root)。NULLなら担当なし
+    int g_open = -1;        // -1: 知らされていない、0: オフ、1: オン
 
     HWND RootOf(HWND hwnd) {
         return hwnd ? GetAncestor(hwnd, GA_ROOT) : NULL;
@@ -29,7 +28,7 @@ namespace {
         LOG_INFO(L"provider: end (%s)", reason);
     }
 
-    // 16 ビットずつ詰めた 2 つの値を取り出す (32 ビットのプロセスから送られても同じ形)
+    // wParam・lParamに16ビットずつ詰めた座標を取り出す（32ビットのプロセスから送られても同じ形）
     void Unpack(WPARAM w, LPARAM l, RECT* rect) {
         DWORD a = (DWORD)w;
         DWORD b = (DWORD)l;
@@ -41,7 +40,7 @@ namespace {
 
     LRESULT CALLBACK ReceiverProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if (msg == g_msgFocus && g_msgFocus) {
-            // HWND は 32 ビットの範囲で意味を持つので、32 ビットのプロセスから送られても復元できる
+            // HWNDは32ビットの範囲で意味を持つので、32ビットのプロセスから送られても復元できる
             HWND target = (HWND)(ULONG_PTR)(DWORD)wParam;
             if (lParam) {
                 if (!target || !IsWindow(target)) {
@@ -101,7 +100,7 @@ bool ImeProvider::Start(HINSTANCE hInstance, const Callbacks& callbacks) {
         LOG_ERROR(L"provider: CreateWindowEx failed (%lu)", GetLastError());
         return false;
     }
-    // 権限の低いプロセス (サンドボックスのアプリの中の IME 等) からも届くようにする
+    // 権限の低いプロセス（サンドボックスのアプリの中のIME等）からも届くようにする
     ChangeWindowMessageFilterEx(g_receiver, g_msgFocus, MSGFLT_ALLOW, NULL);
     ChangeWindowMessageFilterEx(g_receiver, g_msgOpen, MSGFLT_ALLOW, NULL);
     ChangeWindowMessageFilterEx(g_receiver, g_msgCaret, MSGFLT_ALLOW, NULL);
@@ -131,8 +130,8 @@ bool ImeProvider::GetOpenState(ImeState* state) {
 }
 
 void ImeProvider::OnForegroundChanged(HWND eventWindow) {
-    // 前面の切り替えの知らせは遅れて届くことがある (担当開始の後に、その前の窓への切り替えの知らせが届いた実例)。
-    // 知らせの窓ではなく、今の前面の窓で判定する。担当の知らせが切り替えより先に届いた場合も、同じ窓なら残る
+    // 前面の切り替えの知らせは遅れて届くことがある（担当開始の後に、その前のウィンドウへの切り替えの知らせが届いた実例）。
+    // 知らせのウィンドウではなく、今の前面のウィンドウで判定する。担当の知らせが切り替えより先に届いた場合も、同じウィンドウなら残る
     if (!g_window) return;
     if (RootOf(GetForegroundWindow()) != g_window) {
         LOG_DEBUG(L"provider: foreground event window=%p", eventWindow);

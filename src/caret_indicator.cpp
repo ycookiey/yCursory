@@ -5,7 +5,7 @@
 
 using namespace Gdiplus;
 
-// TSF EditSession helper class
+// TSFのEditSessionを実行する補助クラス
 class TsfCaretEditSession : public ITfEditSession {
 private:
     LONG m_refCount;
@@ -119,7 +119,7 @@ bool CaretIndicator::Initialize(HINSTANCE hInstance) {
         return false;
     }
 
-    // TSF 初期化
+    // TSF初期化
     CoInitialize(NULL);
     HRESULT hr = CoCreateInstance(
         CLSID_TF_ThreadMgr,
@@ -143,7 +143,7 @@ bool CaretIndicator::Initialize(HINSTANCE hInstance) {
         // TSF失敗しても続行（他の方法でフォールバック）
     }
 
-    // UI Automation 初期化
+    // UI Automation初期化
     hr = CoCreateInstance(
         CLSID_CUIAutomation,
         NULL,
@@ -218,7 +218,7 @@ void CaretIndicator::SetEnabled(bool enabled) {
 }
 
 void CaretIndicator::Update(ImeState state) {
-    // 後方互換性のため、UpdatePosition + UpdateDisplay を呼ぶ
+    // 後方互換性のため、UpdatePosition + UpdateDisplayを呼ぶ
     UpdatePosition(state);
     UpdateDisplay();
 }
@@ -284,7 +284,7 @@ void CaretIndicator::SetState(ImeState state) {
 
 void CaretIndicator::ShowAtPhysical(POINT physical) {
     if (!m_enabled || m_hwnd == NULL) return;
-    // このプロセスは DPI 非対応なので、物理ピクセルを自分の座標に直す (拡大率 100% なら同じ値)
+    // このプロセスはDPI非対応なので、物理ピクセルを自分の座標に直す（拡大率100%なら同じ値）
     POINT pos = physical;
     PhysicalToLogicalPointForPerMonitorDPI(m_hwnd, &pos);
     m_lastCaretPos = pos;
@@ -308,7 +308,7 @@ void CaretIndicator::UpdateDisplay() {
     // キャレットの実際の位置を即座に表示（LERPなし、軌跡なし）
     m_currentDisplayPos = m_lastCaretPos;
 
-    // 位置も状態も前回描いたままなら何もしない (最前面の窓を毎回動かし描き直すと、前面のアプリの描画に響く)
+    // 位置も状態も前回描いたままなら何もしない（最前面のウィンドウを毎回動かし描き直すと、前面のアプリの描画に響く）
     if (m_visible && m_rendered
         && m_renderedPos.x == m_currentDisplayPos.x && m_renderedPos.y == m_currentDisplayPos.y
         && m_renderedState == m_currentState) {

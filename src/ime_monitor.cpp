@@ -2,7 +2,7 @@
 
 #pragma comment(lib, "imm32.lib")
 
-// IMC_GETOPENSTATUS is not defined in some SDK versions
+// 一部のSDKではIMC_GETOPENSTATUSが定義されていない
 #ifndef IMC_GETOPENSTATUS
 #define IMC_GETOPENSTATUS 0x0005
 #endif
@@ -43,7 +43,7 @@ ImeState ImeMonitor::GetStateForForegroundWindow() {
     }
     
     // IMEの開閉状態を取得（WM_IME_CONTROLメッセージを送信）
-    // 前面のアプリのスレッドが答えるまで待つ呼び出しなので、上限を付ける (固まったアプリに引きずられない)
+    // 前面のアプリのスレッドが答えるまで待つ呼び出しなので、上限を付ける（固まったアプリに引きずられない）
     DWORD_PTR imeOpen = 0;
     if (!SendMessageTimeoutW(imeWnd, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0,
             SMTO_ABORTIFHUNG | SMTO_NORMAL, 50, &imeOpen)) {

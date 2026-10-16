@@ -11,6 +11,9 @@ flowchart TB
         IME["ImeMonitor<br/>IME状態検出"]
         Cursor["CursorManager<br/>カーソル制御"]
         Tray["TrayIcon<br/>システムトレイ"]
+        Caret["CaretIndicator<br/>キャレットインジケーター"]
+        Provider["ImeProvider<br/>IMEからの知らせ"]
+        Log["Logger<br/>ログ"]
     end
     
     subgraph WinAPI["Win32 API"]
@@ -22,6 +25,9 @@ flowchart TB
     Main --> IME
     Main --> Cursor
     Main --> Tray
+    Main --> Caret
+    Main --> Provider
+    Main --> Log
     IME --> IMM
     Cursor --> User
     Tray --> Shell
@@ -41,18 +47,24 @@ sequenceDiagram
     Cursor->>Win: LoadCursor()
     App->>Cursor: SetCursorForState(初期, force=true)
     
-    loop 16msごと (前面の窓でキャレットが取れる間だけ)
-        App->>IME: GetCurrentState()
-        IME->>Win: ImmGetDefaultIMEWnd()
-        IME->>Win: SendMessageTimeout(IMC_GETOPENSTATUS)
-        IME-->>App: English / Japanese
+    loop 16msごと（前面のウィンドウでキャレットが取れる間だけ）
+        alt IMEから知らされている（担当中）
+            App->>App: ImeProvider::GetOpenState()
+        else 知らされていない
+            App->>IME: GetCurrentState()
+            IME->>Win: ImmGetDefaultIMEWnd()
+            IME->>Win: SendMessageTimeout(IMC_GETOPENSTATUS)
+            IME-->>App: English / Japanese
+        end
         App->>Cursor: SetCursorForState()
-        Cursor->>Win: SetSystemCursor() (状態が変わったときだけ)
+        Cursor->>Win: SetSystemCursor()（状態が変わったときだけ）
     end
 
     Note over App: キャレットが1秒取れなければタイマーを止める
     Win->>App: EVENT_SYSTEM_FOREGROUND / EVENT_OBJECT_FOCUS (SetWinEventHook)
     Note over App: タイマーを再開
+    Note over App: キャレットインジケーターが無効のときは、再開の直後だけ入力先を探し、見つかれば以後はIME状態だけを確認する
+    Note over App: IMEからのOpenの知らせは、タイマーが止まっていてもすぐ色に反映する
     
     User->>App: トレイから終了
     App->>Cursor: RestoreOriginalCursor()
@@ -68,22 +80,27 @@ graph LR
         IM[ime_monitor.cpp/h]
         CM[cursor_manager.cpp/h]
         TI[tray_icon.cpp/h]
+        CI[caret_indicator.cpp/h]
+        IP[ime_provider.cpp/h]
+        LG[logger.cpp/h]
+        SM[startup_manager.cpp/h]
         RH[resource.h]
     end
     
     subgraph res["resources/"]
-        EN[cursor_en.cur]
-        JP[cursor_jp.cur]
+        EN["cursor_*_en_*.cur"]
+        JP["cursor_*_jp_*.cur"]
         ICO[app.ico]
+        RC[app.rc]
     end
     
     subgraph tools["Python Scripts"]
-        GEN[generate_cursor.py]
+        GEN[create_icon.py]
         SYS[create_from_system_cursor.py]
     end
     
     subgraph build["build/"]
-        EXE[ime-cursor-indicator.exe]
+        EXE[yCursory.exe]
     end
     
     src --> build
@@ -103,8 +120,9 @@ flowchart TD
     D -->|Yes| E[ImmGetDefaultIMEWnd]
     E --> F{imeWnd != NULL?}
     F -->|No| Z
-    F -->|Yes| G[SendMessage IMC_GETOPENSTATUS]
-    G --> H{IME Open?}
+    F -->|Yes| G[SendMessageTimeout IMC_GETOPENSTATUS 50ms]
+    G -->|応答なし| P[前回の状態]
+    G -->|応答あり| H{IME Open?}
     H -->|No| Z
     H -->|Yes| I[ImmGetConversionStatus]
     I --> J{CMODE_NATIVE?}
@@ -116,12 +134,12 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A["aero_arrow.cur<br/>(Windows標準)"] --> B["read_cur_file()"]
+    A["aero_arrow.cur<br/>（Windows標準）"] --> B["read_cur_file()"]
     B --> C["PIL Image<br/>128x128"]
     C --> D["resize()<br/>32x32"]
     D --> E["add_glow()<br/>青/赤グロー"]
     E --> F["png_to_cur()"]
-    F --> G["cursor_en.cur<br/>cursor_jp.cur"]
+    F --> G["cursor_*_en_*.cur<br/>cursor_*_jp_*.cur"]
 ```
 
 ## 主要API
@@ -154,5 +172,5 @@ mindmap
 |------|-----|
 | EXE | 約120KB |
 | メモリ | 約1.4MB |
-| ポーリング | 16ms (キャレットが取れる窓が前面の間だけ。取れなければ 1 秒で止まり、窓・フォーカスの切り替えで再開) |
+| ポーリング | 16ms（キャレットが取れるウィンドウが前面の間だけ。取れなければ1秒で止まり、ウィンドウ・フォーカスの切り替えで再開） |
 | カーソルサイズ | 32x32 |
