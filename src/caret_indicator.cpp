@@ -275,6 +275,24 @@ void CaretIndicator::ResetCaret() {
     Hide();
 }
 
+void CaretIndicator::SetState(ImeState state) {
+    m_currentState = state;
+    if (m_enabled && m_lastCaretWindow != NULL) {
+        UpdateDisplay();
+    }
+}
+
+void CaretIndicator::ShowAtPhysical(POINT physical) {
+    if (!m_enabled || m_hwnd == NULL) return;
+    // このプロセスは DPI 非対応なので、物理ピクセルを自分の座標に直す (拡大率 100% なら同じ値)
+    POINT pos = physical;
+    PhysicalToLogicalPointForPerMonitorDPI(m_hwnd, &pos);
+    m_lastCaretPos = pos;
+    m_lastCaretWindow = GetForegroundWindow();
+    m_lastUpdateTick = GetTickCount();
+    UpdateDisplay();
+}
+
 void CaretIndicator::UpdateDisplay() {
     if (!m_enabled) {
         Hide();

@@ -5,6 +5,7 @@
 #include "tray_icon.h"
 #include "startup_manager.h"
 #include "logger.h"
+#include "ime_provider.h"
 #include "resource.h"
 
 // Global variables
@@ -137,8 +138,8 @@ static void Resume(const wchar_t* reason, bool newWindow) {
     LOG_INFO(L"resume: %s", reason);
 }
 
-static void Tick() {
-    ImeState state = g_imeMonitor->GetCurrentState();
+// カーソルの色とトレイのツールチップに IME 状態を当てる
+static void ApplyState(ImeState state) {
     g_cursorManager->SetCursorForState(state);
 
     // トレイのツールチップは、状態が変わったときだけ書き換える (書き換えは explorer への通知になる)
@@ -147,6 +148,31 @@ static void Tick() {
         tooltipState = (int)state;
         g_trayIcon->UpdateTooltip(state == ImeState::Japanese ? L"IME: Japanese" : L"IME: English");
     }
+}
+
+// 担当中の IME からオン・オフを知らされた (タイマーが止まっていても、ここで色が変わる)
+static void OnProviderOpen(ImeState state) {
+    ApplyState(state);
+    if (g_caretIndicator) g_caretIndicator->SetState(state);
+}
+
+// 担当中の IME から位置を知らされた。自分でキャレットを取れている間 (タイマーが動いている間) は、自分の値を使う
+static void OnProviderCaret(bool hasPosition, RECT physical) {
+    if (g_active || !g_caretIndicator) return;
+    if (hasPosition) {
+        g_caretIndicator->ShowAtPhysical({physical.left, physical.top});
+    } else {
+        g_caretIndicator->ResetCaret();
+    }
+}
+
+static void Tick() {
+    // 担当中の IME から知らされていれば、前面のアプリに問い合わせない
+    ImeState state;
+    if (!ImeProvider::GetOpenState(&state)) {
+        state = g_imeMonitor->GetCurrentState();
+    }
+    ApplyState(state);
 
     bool caretFound;
     if (g_caretIndicator->IsEnabled()) {
@@ -177,8 +203,9 @@ static void Tick() {
 
 // OS からの知らせ (WINEVENT_OUTOFCONTEXT なので、このスレッドのメッセージループの中で呼ばれる)。
 // ここでは再開の印を付けるだけにし、問い合わせは次のタイマーで行う
-static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND, LONG, LONG, DWORD, DWORD) {
+static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG, LONG, DWORD, DWORD) {
     if (event == EVENT_SYSTEM_FOREGROUND) {
+        ImeProvider::OnForegroundChanged(hwnd);
         Resume(L"foreground", true);
     } else if (event == EVENT_OBJECT_FOCUS) {
         Resume(L"focus", false);
@@ -337,6 +364,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImeState initialState = g_imeMonitor->GetCurrentState();
     g_cursorManager->SetCursorForState(initialState, true);
 
+    // IME から状態を知らせてもらう受け口 (送ってくる IME がいなければ何も起きない)
+    ImeProvider::Callbacks providerCallbacks = { OnProviderOpen, OnProviderCaret };
+    ImeProvider::Start(hInstance, providerCallbacks);
+
     // 再開のきっかけ。範囲で登録すると間の大量のイベントも届くので、1 種類ずつ登録する
     g_foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL, OnWinEvent,
         0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
@@ -356,6 +387,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     
     if (g_foregroundHook) UnhookWinEvent(g_foregroundHook);
     if (g_focusHook) UnhookWinEvent(g_focusHook);
+    ImeProvider::Stop();
     LOG_INFO(L"exit");
 
     // Cleanup

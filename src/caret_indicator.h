@@ -19,6 +19,8 @@ public:
     void UpdateDisplay();                 // 位置か状態が変わったときだけ描き直す
     bool Probe();                         // 表示の有無に関係なく、キャレットが取れるかを 1 回だけ調べる
     void ResetCaret();                    // 前の窓のキャレット位置を捨てて隠す (前面の窓が変わったとき)
+    void SetState(ImeState state);        // IME 状態だけを変える (外から知らされたとき)。表示中なら色を描き直す
+    void ShowAtPhysical(POINT physical);  // 外から知らされた位置 (物理ピクセル) に出す
     void Show();
     void Hide();
     void Cleanup();
