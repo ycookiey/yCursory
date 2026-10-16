@@ -13,7 +13,7 @@ Windows 11でマウスカーソル周囲に、IMEの英字・日本語の状態�
   - メモ帳、Word、Excel、Vivaldiなど複数のアプリで動く
 - IMEや外部ツールからIME状態とキャレット位置を受け取れる。仕様は[IME状態の受け取り](docs/ime-state-protocol.md)
 - システムトレイ常駐
-- 軽量。EXEは約120KB、メモリは約1.4MB
+- 軽量。EXEは約380KB
 
 ## インストール
 
