@@ -326,8 +326,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     if (!g_cursorManager->Initialize(hInstance)) {
         MessageBoxW(NULL,
-            L"Failed to load cursor files.\n"
-            L"Please place cursor_en.cur and cursor_jp.cur in the resources folder.",
+            L"Failed to load the cursors embedded in yCursory.exe.\n"
+            L"The executable may be damaged. Please reinstall yCursory.",
             L"Error", MB_ICONERROR);
         delete g_trayIcon;
         delete g_caretIndicator;
