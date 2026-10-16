@@ -37,7 +37,7 @@ def read_cur_file(cur_path: str):
         # 画像データを読む
         f.seek(offset)
         
-        # BITMAPINFOヘADER
+        # BITMAPINFOHEADER
         bi_size = struct.unpack('<I', f.read(4))[0]
         bi_width = struct.unpack('<i', f.read(4))[0]
         bi_height = struct.unpack('<i', f.read(4))[0]
@@ -413,7 +413,7 @@ def process_cursor(name: str, filename: str, default_hotspot_x: int, default_hot
         if not os.path.exists(images_dir):
             os.makedirs(images_dir)
         
-        # === Lightグロー版（対称・旧デフォルト） ===
+        # === Lightグロー版（対称） ===
         # 青グロー (EN)
         blue_light = add_glow_to_cursor(cursor_32, (0, 150, 255), glow_size=3, heavy_style=False)
         en_light_path = os.path.join(OUTPUT_DIR, "resources", f"cursor_{name}_en_light.cur")

@@ -195,12 +195,7 @@ bool CaretIndicator::CreateIndicatorWindow() {
     }
 
     // スクリーンショットに写らないように設定(WDA_EXCLUDEFROMCAPTURE = 0x00000011)
-    // 定数が未定義の場合に備えて直接値を使用するか、定義を確認するが、
-    // ここでは安全のため定数がなければ定義するようにコードを追加するアプローチではなく、
-    // 既存のSDKで定義されていることを期待しつつ、マジックナンバーは避けたいが
-    // ユーザー環境のSDKバージョンが不明なため、念の為コメントで値を記載し、定数を使う。
-    // もしコンパイルエラーになるなら定数を定義する必要がある。
-    // まずは定数を使ってみる。
+    // 古いSDKにはWDA_EXCLUDEFROMCAPTUREの定義が無いので、値を直接書く
     const DWORD WDA_EXCLUDEFROMCAPTURE_VAL = 0x00000011;
     SetWindowDisplayAffinity(m_hwnd, WDA_EXCLUDEFROMCAPTURE_VAL);
 
