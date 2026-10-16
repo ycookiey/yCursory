@@ -329,7 +329,7 @@ bool CaretIndicator::GetCaretPosition(POINT* pos, HWND* caretWnd) {
         return true;
     }
 
-    // 優先順位2: IMM32（変換中のみ有効）
+    // 優先順位2: IMM32。前面のウィンドウの変換ウィンドウの位置を読み、変換中かは確認しない
     if (TryGetFromIMM32(pos, caretWnd)) {
         m_lastMethod = METHOD_IMM32;
         return true;
@@ -578,7 +578,7 @@ bool CaretIndicator::TryGetCaretFromElement(IUIAutomationElement* element, POINT
                         LONG y = (LONG)rects[1];
 
                         // 明らかにおかしい座標（画面左端など）はスキップ
-                        // VSCodeなどエディタは左端に近い場合があるので閾値は低めに
+                        // 画面の左端に寄せたウィンドウでは、行頭のキャレットのxも小さいので、閾値は低めにする
                         if (x > 10 && y > 0) {
                             pos->x = x;
                             pos->y = y;

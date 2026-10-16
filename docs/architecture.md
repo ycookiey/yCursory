@@ -130,6 +130,17 @@ flowchart TD
     J -->|No| Z
 ```
 
+## キャレットの取得方法
+
+`CaretIndicator::GetCaretPosition`が、次の順に試し、最初に取れた方法を使う。
+
+1. `GetGUIThreadInfo`: Windowsが管理するキャレットを使うアプリ
+2. IMM32: 前面のウィンドウのIMEコンテキストから、変換ウィンドウの位置を読む
+3. UI Automation: ChromiumやElectronで作られたアプリ。フォーカスのある要素のTextPatternから読む
+4. TSF: yCursory自身のスレッドのキャレットだけ取れるため、通常は使われない
+
+どれでも取れないまま1秒たつと、IME状態の確認を止める。
+
 ## カーソル生成フロー
 
 ```mermaid
