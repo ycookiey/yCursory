@@ -91,3 +91,7 @@ yCursory/
 
 - [アーキテクチャ](docs/architecture.md) - mermaidの設計図
 - [IME状態の受け取り](docs/ime-state-protocol.md) - プロトコルv1で、IMEや外部ツールからyCursoryへ状態を送る方法
+
+## ライセンス
+
+[MIT License](LICENSE)
