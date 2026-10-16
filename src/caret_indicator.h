@@ -14,7 +14,6 @@ public:
     ~CaretIndicator();
 
     bool Initialize(HINSTANCE hInstance);
-    void Update(ImeState state);  // 後方互換性のために保持（内部でUpdatePosition+UpdateDisplayを呼ぶ）
     bool UpdatePosition(ImeState state);  // 位置検出のみ。キャレットが取れたらtrue。表示が無効のときはfalse
     void UpdateDisplay();                 // 位置か状態が変わったときだけ描き直す
     bool Probe();                         // 表示の有無に関係なく、キャレットが取れるかを1回だけ調べる

@@ -217,12 +217,6 @@ void CaretIndicator::SetEnabled(bool enabled) {
     }
 }
 
-void CaretIndicator::Update(ImeState state) {
-    // 後方互換性のため、UpdatePosition + UpdateDisplayを呼ぶ
-    UpdatePosition(state);
-    UpdateDisplay();
-}
-
 bool CaretIndicator::UpdatePosition(ImeState state) {
     if (!m_enabled) {
         return false;
