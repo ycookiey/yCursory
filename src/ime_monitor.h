@@ -22,4 +22,7 @@ public:
     
 private:
     ImeState GetStateForWindow(HWND hwnd);
+
+    // 前面のアプリが応答しないときに返す、前回の状態
+    ImeState m_lastState = ImeState::English;
 };

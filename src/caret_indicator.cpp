@@ -95,6 +95,9 @@ CaretIndicator::CaretIndicator()
     , m_currentDisplayPos({0, 0})
     , m_lastCaretWindow(NULL)
     , m_lastUpdateTick(0)
+    , m_rendered(false)
+    , m_renderedPos({0, 0})
+    , m_renderedState(ImeState::English)
     , m_threadMgr(NULL)
     , m_clientId(TF_CLIENTID_NULL)
     , m_uiAutomation(NULL)
@@ -220,9 +223,9 @@ void CaretIndicator::Update(ImeState state) {
     UpdateDisplay();
 }
 
-void CaretIndicator::UpdatePosition(ImeState state) {
+bool CaretIndicator::UpdatePosition(ImeState state) {
     if (!m_enabled) {
-        return;
+        return false;
     }
 
     // IME状態が変わった場合は強制更新
@@ -238,15 +241,15 @@ void CaretIndicator::UpdatePosition(ImeState state) {
         // 位置取得失敗時は、前回の位置を保持
         if (m_lastCaretWindow == NULL) {
             // 初回の取得失敗時のみ非表示フラグを立てる
-            return;
+            return false;
         }
         // 前回の位置を使用（色のみ更新される）
-        return;
+        return false;
     }
 
     // 更新が必要かチェック（IME状態変更時は強制更新）
     if (!stateChanged && !ShouldUpdate(caretPos, caretWnd)) {
-        return;
+        return true;
     }
 
     // 位置更新（取得成功時のみ）
@@ -258,6 +261,18 @@ void CaretIndicator::UpdatePosition(ImeState state) {
     m_lastCaretPos = caretPos;
     m_lastCaretWindow = caretWnd;
     m_lastUpdateTick = GetTickCount();
+    return true;
+}
+
+bool CaretIndicator::Probe() {
+    POINT pos;
+    HWND wnd;
+    return GetCaretPosition(&pos, &wnd);
+}
+
+void CaretIndicator::ResetCaret() {
+    m_lastCaretWindow = NULL;
+    Hide();
 }
 
 void CaretIndicator::UpdateDisplay() {
@@ -275,9 +290,19 @@ void CaretIndicator::UpdateDisplay() {
     // キャレットの実際の位置を即座に表示（LERPなし、軌跡なし）
     m_currentDisplayPos = m_lastCaretPos;
 
+    // 位置も状態も前回描いたままなら何もしない (最前面の窓を毎回動かし描き直すと、前面のアプリの描画に響く)
+    if (m_visible && m_rendered
+        && m_renderedPos.x == m_currentDisplayPos.x && m_renderedPos.y == m_currentDisplayPos.y
+        && m_renderedState == m_currentState) {
+        return;
+    }
+
     UpdateWindowPosition(m_currentDisplayPos);
     RenderGlow();
     Show();
+    m_rendered = true;
+    m_renderedPos = m_currentDisplayPos;
+    m_renderedState = m_currentState;
 }
 
 const wchar_t* CaretIndicator::GetLastMethodName() const {
@@ -731,6 +756,7 @@ void CaretIndicator::Show() {
 }
 
 void CaretIndicator::Hide() {
+    m_rendered = false;
     if (m_visible) {
         ShowWindow(m_hwnd, SW_HIDE);
         m_visible = false;

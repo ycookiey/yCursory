@@ -14,7 +14,8 @@ ImeMonitor::~ImeMonitor() {
 }
 
 ImeState ImeMonitor::GetCurrentState() {
-    return GetStateForForegroundWindow();
+    m_lastState = GetStateForForegroundWindow();
+    return m_lastState;
 }
 
 ImeState ImeMonitor::GetStateForForegroundWindow() {
@@ -42,7 +43,12 @@ ImeState ImeMonitor::GetStateForForegroundWindow() {
     }
     
     // IMEの開閉状態を取得（WM_IME_CONTROLメッセージを送信）
-    LRESULT imeOpen = SendMessage(imeWnd, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0);
+    // 前面のアプリのスレッドが答えるまで待つ呼び出しなので、上限を付ける (固まったアプリに引きずられない)
+    DWORD_PTR imeOpen = 0;
+    if (!SendMessageTimeoutW(imeWnd, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0,
+            SMTO_ABORTIFHUNG | SMTO_NORMAL, 50, &imeOpen)) {
+        return m_lastState;
+    }
     if (!imeOpen) {
         return ImeState::English;
     }

@@ -15,8 +15,10 @@ public:
 
     bool Initialize(HINSTANCE hInstance);
     void Update(ImeState state);  // 後方互換性のために保持（内部でUpdatePosition+UpdateDisplayを呼ぶ）
-    void UpdatePosition(ImeState state);  // 位置検出のみ（低頻度：100ms）
-    void UpdateDisplay();                 // 補間と描画のみ（高頻度：16ms）
+    bool UpdatePosition(ImeState state);  // 位置検出のみ。キャレットが取れたら true (無効時は false)
+    void UpdateDisplay();                 // 位置か状態が変わったときだけ描き直す
+    bool Probe();                         // 表示の有無に関係なく、キャレットが取れるかを 1 回だけ調べる
+    void ResetCaret();                    // 前の窓のキャレット位置を捨てて隠す (前面の窓が変わったとき)
     void Show();
     void Hide();
     void Cleanup();
@@ -41,6 +43,11 @@ private:
     POINT m_currentDisplayPos; // 現在の表示位置
     HWND m_lastCaretWindow;
     DWORD m_lastUpdateTick;
+
+    // 最後に描いた内容 (同じなら描き直さない)
+    bool m_rendered;
+    POINT m_renderedPos;
+    ImeState m_renderedState;
 
     // TSF関連
     ITfThreadMgr* m_threadMgr;

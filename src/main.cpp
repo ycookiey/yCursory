@@ -14,11 +14,19 @@ static CaretIndicator* g_caretIndicator = nullptr;
 static TrayIcon* g_trayIcon = nullptr;
 static HWND g_hwnd = NULL;
 
-// Timer IDs
-#define TIMER_CHECK_IME 1
-#define TIMER_UPDATE_DISPLAY 2
-#define CHECK_INTERVAL_MS 16       // 位置検出は60fps（16ms）
-#define DISPLAY_UPDATE_MS 16       // 描画更新は60fps（16ms）
+// Timer
+// 動くのは「キャレットのある窓」が前面にある間だけ。キャレットが GRACE_MS 続けて取れなければタイマーを止め、
+// 前面の窓の切り替えかフォーカスの移動を OS から知らされたときに再開する (ゲーム等では止まったままになる)
+#define TIMER_TICK 1
+#define TICK_MS 16                 // IME 状態とキャレット位置の確認 (60fps)
+#define GRACE_MS 1000              // キャレットが取れないまま、これだけ続いたら止める
+
+static bool g_active = false;       // タイマーが動いているか
+static DWORD g_graceStart = 0;      // キャレットが取れなくなった (または再開した) 時刻
+static bool g_caretSeen = false;    // 直近の確認でキャレットが取れたか
+static bool g_textTarget = false;   // 表示が無効のとき: 再開後に入力先が見つかったか (見つかれば以後は探さない)
+static HWINEVENTHOOK g_foregroundHook = NULL;
+static HWINEVENTHOOK g_focusHook = NULL;
 
 // Registry Key
 const wchar_t* REG_KEY_PATH = L"Software\\yCursory";
@@ -99,7 +107,7 @@ static void LogChanges(ImeState state) {
         lastState = (int)state;
         LOG_DEBUG(L"ime: %s", state == ImeState::Japanese ? L"japanese" : L"english");
     }
-    if (g_caretIndicator && g_caretIndicator->IsEnabled()) {
+    if (g_caretIndicator) {
         const wchar_t* method = g_caretIndicator->GetLastMethodName();
         if (method != lastMethod) {
             lastMethod = method;
@@ -108,39 +116,88 @@ static void LogChanges(ImeState state) {
     }
 }
 
+static void Pause(const wchar_t* reason) {
+    if (!g_active) return;
+    KillTimer(g_hwnd, TIMER_TICK);
+    g_active = false;
+    // 位置も捨てる (残すと、同じ窓でフォーカスの知らせで再開したとき、古い位置に光が出る)
+    if (g_caretIndicator) g_caretIndicator->ResetCaret();
+    LOG_INFO(L"pause: %s", reason);
+}
+
+// newWindow: 前面の窓が変わった (前の窓のキャレット位置を捨てる)
+static void Resume(const wchar_t* reason, bool newWindow) {
+    g_graceStart = GetTickCount();
+    g_caretSeen = false;
+    g_textTarget = false;
+    if (newWindow && g_caretIndicator) g_caretIndicator->ResetCaret();
+    if (g_active) return;
+    SetTimer(g_hwnd, TIMER_TICK, TICK_MS, NULL);
+    g_active = true;
+    LOG_INFO(L"resume: %s", reason);
+}
+
+static void Tick() {
+    ImeState state = g_imeMonitor->GetCurrentState();
+    g_cursorManager->SetCursorForState(state);
+
+    // トレイのツールチップは、状態が変わったときだけ書き換える (書き換えは explorer への通知になる)
+    static int tooltipState = -1;
+    if (g_trayIcon && (int)state != tooltipState) {
+        tooltipState = (int)state;
+        g_trayIcon->UpdateTooltip(state == ImeState::Japanese ? L"IME: Japanese" : L"IME: English");
+    }
+
+    bool caretFound;
+    if (g_caretIndicator->IsEnabled()) {
+        caretFound = g_caretIndicator->UpdatePosition(state);
+        g_caretIndicator->UpdateDisplay();
+    } else if (!g_textTarget) {
+        // 表示が無効なら、再開の直後だけ入力先を探す。見つかれば、以後は IME の状態だけを見る
+        caretFound = g_caretIndicator->Probe();
+        g_textTarget = caretFound;
+    } else {
+        caretFound = true;
+    }
+    LogChanges(state);
+
+    if (caretFound) {
+        g_caretSeen = true;
+        return;
+    }
+    if (g_caretSeen) {
+        g_caretSeen = false;
+        g_graceStart = GetTickCount();
+    }
+    // 再開のきっかけを受け取れないときは止めない (止めたら戻れなくなる)
+    if (GetTickCount() - g_graceStart >= GRACE_MS && g_foregroundHook && g_focusHook) {
+        Pause(L"no caret");
+    }
+}
+
+// OS からの知らせ (WINEVENT_OUTOFCONTEXT なので、このスレッドのメッセージループの中で呼ばれる)。
+// ここでは再開の印を付けるだけにし、問い合わせは次のタイマーで行う
+static void CALLBACK OnWinEvent(HWINEVENTHOOK, DWORD event, HWND, LONG, LONG, DWORD, DWORD) {
+    if (event == EVENT_SYSTEM_FOREGROUND) {
+        Resume(L"foreground", true);
+    } else if (event == EVENT_OBJECT_FOCUS) {
+        Resume(L"focus", false);
+    }
+}
+
 // Window procedure
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CREATE:
-        // Start timers
-        SetTimer(hwnd, TIMER_CHECK_IME, CHECK_INTERVAL_MS, NULL);      // 位置検出（100ms）
-        SetTimer(hwnd, TIMER_UPDATE_DISPLAY, DISPLAY_UPDATE_MS, NULL); // 描画更新（16ms）
+        // タイマーは、部品の初期化が終わってから WinMain で始める
         return 0;
-        
+
     case WM_TIMER:
-        if (wParam == TIMER_CHECK_IME && g_imeMonitor && g_cursorManager) {
-            ImeState state = g_imeMonitor->GetCurrentState();
-            g_cursorManager->SetCursorForState(state);
-
-            // Update caret indicator position (100ms interval)
-            if (g_caretIndicator) {
-                g_caretIndicator->UpdatePosition(state);
-            }
-            LogChanges(state);
-
-            // Update tooltip
-            if (g_trayIcon) {
-                g_trayIcon->UpdateTooltip(
-                    state == ImeState::Japanese ? L"IME: Japanese" : L"IME: English"
-                );
-            }
-        }
-        else if (wParam == TIMER_UPDATE_DISPLAY && g_caretIndicator) {
-            // Update caret indicator display (16ms interval for smooth interpolation)
-            g_caretIndicator->UpdateDisplay();
+        if (wParam == TIMER_TICK && g_imeMonitor && g_cursorManager && g_caretIndicator) {
+            Tick();
         }
         return 0;
-        
+
     case WM_TRAYICON:
         if (lParam == WM_RBUTTONUP) {
             // Show context menu
@@ -207,13 +264,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if (g_caretIndicator) {
                 g_caretIndicator->SetEnabled(!g_caretIndicator->IsEnabled());
                 SaveSettings();
+                Resume(L"setting", false);
             }
         }
         return 0;
         
     case WM_DESTROY:
-        KillTimer(hwnd, TIMER_CHECK_IME);
-        KillTimer(hwnd, TIMER_UPDATE_DISPLAY);
+        KillTimer(hwnd, TIMER_TICK);
         PostQuitMessage(0);
         return 0;
     }
@@ -279,7 +336,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     LoadSettings(); // 設定読み込み（キャレットインジケーターの設定も含む）
     ImeState initialState = g_imeMonitor->GetCurrentState();
     g_cursorManager->SetCursorForState(initialState, true);
-    
+
+    // 再開のきっかけ。範囲で登録すると間の大量のイベントも届くので、1 種類ずつ登録する
+    g_foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL, OnWinEvent,
+        0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    g_focusHook = SetWinEventHook(EVENT_OBJECT_FOCUS, EVENT_OBJECT_FOCUS, NULL, OnWinEvent,
+        0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    if (!g_foregroundHook || !g_focusHook) {
+        LOG_ERROR(L"SetWinEventHook failed (foreground=%p focus=%p)", g_foregroundHook, g_focusHook);
+    }
+    Resume(L"start", true);
+
     // Message loop
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -287,6 +354,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         DispatchMessage(&msg);
     }
     
+    if (g_foregroundHook) UnhookWinEvent(g_foregroundHook);
+    if (g_focusHook) UnhookWinEvent(g_focusHook);
     LOG_INFO(L"exit");
 
     // Cleanup

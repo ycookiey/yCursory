@@ -41,14 +41,18 @@ sequenceDiagram
     Cursor->>Win: LoadCursor()
     App->>Cursor: SetCursorForState(初期, force=true)
     
-    loop 100msごと
+    loop 16msごと (前面の窓でキャレットが取れる間だけ)
         App->>IME: GetCurrentState()
         IME->>Win: ImmGetDefaultIMEWnd()
-        IME->>Win: SendMessage(IMC_GETOPENSTATUS)
+        IME->>Win: SendMessageTimeout(IMC_GETOPENSTATUS)
         IME-->>App: English / Japanese
         App->>Cursor: SetCursorForState()
-        Cursor->>Win: SetSystemCursor()
+        Cursor->>Win: SetSystemCursor() (状態が変わったときだけ)
     end
+
+    Note over App: キャレットが1秒取れなければタイマーを止める
+    Win->>App: EVENT_SYSTEM_FOREGROUND / EVENT_OBJECT_FOCUS (SetWinEventHook)
+    Note over App: タイマーを再開
     
     User->>App: トレイから終了
     App->>Cursor: RestoreOriginalCursor()
@@ -138,6 +142,7 @@ mindmap
       GetForegroundWindow
       GetKeyboardLayout
       SetTimer
+      SetWinEventHook
     Tray
       Shell_NotifyIcon
       TrackPopupMenu
@@ -149,5 +154,5 @@ mindmap
 |------|-----|
 | EXE | 約120KB |
 | メモリ | 約1.4MB |
-| ポーリング | 100ms |
+| ポーリング | 16ms (キャレットが取れる窓が前面の間だけ。取れなければ 1 秒で止まり、窓・フォーカスの切り替えで再開) |
 | カーソルサイズ | 32x32 |
