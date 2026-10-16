@@ -14,6 +14,12 @@ Windows 11でマウスカーソル周囲にIME状態（英字/日本語）をグ
 - システムトレイ常駐
 - 軽量（EXE: 約120KB, メモリ: 約1.4MB）
 
+## ログ
+
+`%LOCALAPPDATA%\yCursory\logs\yCursory.log` に、起動・終了、止まった・再開した、前面のアプリ、キャレットの取得方法 (GUIThreadInfo / IMM32 / UIAutomation / TSF / none) が変わったときだけ書く。1 MB を超えると `yCursory.1.log` に退避する。
+
+レベルはレジストリ `HKCU\Software\yCursory` の `LogLevel` (DWORD) で変える: 0=なし 1=error 2=warn 3=info (既定) 4=debug (IME のオン・オフも書く)。
+
 ## Glow Style (グロースタイル)
 
 シーンに合わせて選択できる2種類のスタイルを用意しました。

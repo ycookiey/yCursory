@@ -280,6 +280,16 @@ void CaretIndicator::UpdateDisplay() {
     Show();
 }
 
+const wchar_t* CaretIndicator::GetLastMethodName() const {
+    switch (m_lastMethod) {
+    case METHOD_GUITHREADINFO: return L"GUIThreadInfo";
+    case METHOD_IMM32:         return L"IMM32";
+    case METHOD_TSF:           return L"TSF";
+    case METHOD_UIAUTOMATION:  return L"UIAutomation";
+    default:                   return L"none";
+    }
+}
+
 bool CaretIndicator::GetCaretPosition(POINT* pos, HWND* caretWnd) {
     // 優先順位1: GetGUIThreadInfo（軽量・標準アプリ対応）
     if (TryGetFromGUIThreadInfo(pos, caretWnd)) {

@@ -4,6 +4,7 @@
 #include "caret_indicator.h"
 #include "tray_icon.h"
 #include "startup_manager.h"
+#include "logger.h"
 #include "resource.h"
 
 // Global variables
@@ -61,6 +62,52 @@ void LoadSettings() {
     }
 }
 
+// ログ用: 窓のプロセスの実行ファイル名 (取れなければ "?")
+static void ProcessNameOf(HWND hwnd, wchar_t* out, DWORD outLen, DWORD* pidOut) {
+    wcscpy_s(out, outLen, L"?");
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    *pidOut = pid;
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!process) return;
+    wchar_t path[MAX_PATH];
+    DWORD len = MAX_PATH;
+    if (QueryFullProcessImageNameW(process, 0, path, &len)) {
+        const wchar_t* name = wcsrchr(path, L'\\');
+        wcscpy_s(out, outLen, name ? name + 1 : path);
+    }
+    CloseHandle(process);
+}
+
+// ログ: 前面の窓・IME 状態・キャレットの取得方法が変わったときだけ書く
+static void LogChanges(ImeState state) {
+    static HWND lastForeground = NULL;
+    static int lastState = -1;
+    static const wchar_t* lastMethod = nullptr;
+
+    HWND fg = GetForegroundWindow();
+    if (fg != lastForeground) {
+        lastForeground = fg;
+        if (Logger::Enabled(LogLevel::Info)) {
+            wchar_t name[MAX_PATH];
+            DWORD pid = 0;
+            ProcessNameOf(fg, name, MAX_PATH, &pid);
+            LOG_INFO(L"foreground: %s (pid=%u)", name, pid);
+        }
+    }
+    if ((int)state != lastState) {
+        lastState = (int)state;
+        LOG_DEBUG(L"ime: %s", state == ImeState::Japanese ? L"japanese" : L"english");
+    }
+    if (g_caretIndicator && g_caretIndicator->IsEnabled()) {
+        const wchar_t* method = g_caretIndicator->GetLastMethodName();
+        if (method != lastMethod) {
+            lastMethod = method;
+            LOG_INFO(L"caret: %s", method);
+        }
+    }
+}
+
 // Window procedure
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
@@ -79,6 +126,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if (g_caretIndicator) {
                 g_caretIndicator->UpdatePosition(state);
             }
+            LogChanges(state);
 
             // Update tooltip
             if (g_trayIcon) {
@@ -174,6 +222,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
+    Logger::Init(REG_KEY_PATH);
+    LOG_INFO(L"start (pid=%u)", GetCurrentProcessId());
+
     // Register window class
     WNDCLASSEXW wc = {};
     wc.cbSize = sizeof(WNDCLASSEXW);
@@ -236,6 +287,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         DispatchMessage(&msg);
     }
     
+    LOG_INFO(L"exit");
+
     // Cleanup
     delete g_trayIcon;
     delete g_caretIndicator;

@@ -25,6 +25,9 @@ public:
     void SetEnabled(bool enabled);
     bool IsEnabled() const { return m_enabled; }
 
+    // 直近のキャレット位置の取得に使った方法 (ログ用)。取れなかったときは "none"
+    const wchar_t* GetLastMethodName() const;
+
 private:
     // レイヤードウィンドウ
     HWND m_hwnd;
