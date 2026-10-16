@@ -6,8 +6,7 @@
 
 - 英字のときは青、日本語のときは赤のグローを、マウスカーソルに付ける
 - 文字の入力位置（キャレット）にも、同じ色のグローを出す
-- グローの形を、HeavyとLightから選べる
-- IMEからIMEの状態を受け取れる。送る形は[プロトコルv1](docs/ime-state-protocol.md)に書いた
+- IMEや外部ツールから、IMEのオン・オフとキャレットの位置を受け取れる。送る形は[プロトコルv1](docs/ime-state-protocol.md)に書いた
 
 ## インストール
 
@@ -22,7 +21,7 @@ scoop install yscoopy/ycursory
 
 `yCursory.exe`を起動すると、タスクトレイにアイコンが出る。アイコンを右クリックして、次を選ぶ。
 
-- Glow Style: グローの形をHeavyかLightにする
+- Glow Style: グロースタイルをHeavyかLightにする
 - Caret Indicator: キャレットのグローを出すかを切り替える
 - スタートアップに登録: サインインしたときに自動で起動するかを切り替える
 - Exit: 終了する。カーソルは元に戻る
@@ -30,16 +29,16 @@ scoop install yscoopy/ycursory
 ## 既知の制限
 
 - キャレットの位置を取れないアプリでは、IMEを切り替えても、次に前面のウィンドウかフォーカスが切り替わるまで、カーソルの色が変わらない
-- IMEのオン・オフを読み取れないIMEがある。プロトコルv1でIMEの状態を送るIMEなら、カーソルの色が変わる
+- IMEのオン・オフを読み取れないIMEがある
 - 動作を確認したのはWindows 11だけ
 
 ## アンインストール
 
-1. トレイのメニューの「スタートアップに登録」のチェックを外す
-2. トレイのメニューのExitで終了する
+1. タスクトレイのメニューの「スタートアップに登録」のチェックを外す
+2. タスクトレイのメニューのExitで終了する
 3. `scoop uninstall ycursory`を実行する
 
-設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。終了せずにyCursoryを止めてカーソルが元に戻らないときは、yCursoryを起動し直してExitで終了するか、サインアウトしてサインインし直す。
+設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了し、カーソルが元に戻らないときは、yCursoryを起動し直してExitで終了するか、サインアウトしてサインインし直す。
 
 ## グロースタイル
 
