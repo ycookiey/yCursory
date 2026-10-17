@@ -1,16 +1,16 @@
 # yCursory
 
-日本語IMEの入力モードを、マウスカーソルの色で示すWindowsの常駐ツール。入力欄を見なくても、今の入力が日本語か英字かが分かる。
+日本語IMEの入力モードを、マウスカーソルの色で示すWindowsの常駐ツール。入力欄を見なくても、現在の入力モードが日本語か英字かを判別できる。
 
 ## 特徴
 
-- 英字のときは青、日本語のときは赤のグローを、マウスカーソルに付ける
-- 文字の入力位置（キャレット）にも、同じ色のグローを出す
-- IMEや外部ツールから、IMEのオン・オフとキャレットの位置を受け取れる。送る形は[プロトコルv1](docs/ime-state-protocol.md)に書いた
+- 英字入力時は青、日本語入力時は赤のグローを、マウスカーソルに表示する
+- 文字の入力位置（キャレット）にも、同じ色のグローを表示する
+- IMEや外部ツールから、IMEのオン・オフとキャレットの位置を受信できる。送信の形式は[プロトコルv1](docs/ime-state-protocol.md)に記載した
 
 ## インストール
 
-[Scoop](https://scoop.sh/)で入れる。[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`を取得してもよい。
+[Scoop](https://scoop.sh/)でインストールする。[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`を取得してもよい。
 
 ```powershell
 scoop bucket add yscoopy https://github.com/ycookiey/yscoopy
@@ -19,30 +19,30 @@ scoop install yscoopy/ycursory
 
 ## 使い方
 
-`yCursory.exe`を起動すると、タスクトレイにアイコンが出る。アイコンを右クリックして、次を選ぶ。
+`yCursory.exe`を起動すると、タスクトレイにアイコンが表示される。アイコンを右クリックし、次の項目を選択する。
 
-- Glow Style: グロースタイルをHeavyかLightにする
-- Caret Indicator: キャレットのグローを出すかを切り替える
-- スタートアップに登録: サインインしたときに自動で起動するかを切り替える
+- Glow Style: グロースタイルをHeavyとLightから選択する
+- Caret Indicator: キャレットのグローの表示を切り替える
+- スタートアップに登録: サインイン時の自動起動を切り替える
 - Exit: 終了する。カーソルは元に戻る
 
 ## 既知の制限
 
-- キャレットの位置を取れないアプリでは、IMEを切り替えても、次に前面のウィンドウかフォーカスが切り替わるまで、カーソルの色が変わらない
-- IMEのオン・オフを読み取れないIMEがある
-- 動作を確認したのはWindows 11だけ
+- キャレットの位置を取得できないアプリでは、IMEを切り替えても、次に前面のウィンドウかフォーカスが切り替わるまで、カーソルの色が変化しない
+- オン・オフを取得できないIMEがある
+- 動作確認はWindows 11のみ
 
 ## アンインストール
 
-1. タスクトレイのメニューの「スタートアップに登録」のチェックを外す
+1. タスクトレイのメニューの「スタートアップに登録」のチェックを解除する
 2. タスクトレイのメニューのExitで終了する
 3. `scoop uninstall ycursory`を実行する
 
-設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了し、カーソルが元に戻らないときは、yCursoryを起動し直してExitで終了するか、サインアウトしてサインインし直す。
+アンインストール後も、設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了してカーソルが元に戻らない場合は、yCursoryを再起動してExitで終了するか、サインアウトして再度サインインする。
 
 ## グロースタイル
 
-- Heavy: 既定。右下に強いグローを加え、カーソルを見つけやすくする
+- Heavy: 既定。右下に強いグローを加え、カーソルの視認性を高める
 - Light: 全方向に均等な、柔らかいグロー
 
 | Cursor | Light (EN) | Light (JP) | Heavy (EN) | Heavy (JP) |
@@ -62,7 +62,7 @@ scoop install yscoopy/ycursory
 
 ## ビルド
 
-Visual StudioのC++のビルドツールとCMakeでビルドする。Visual Studioの「Developer PowerShell for VS」で次を実行すると、`build\yCursory.exe`ができる。
+Visual StudioのC++のビルドツールとCMakeでビルドする。Visual Studioの「Developer PowerShell for VS」で次を実行すると、`build\yCursory.exe`が生成される。
 
 ```powershell
 cmake -S . -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
