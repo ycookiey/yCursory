@@ -5,7 +5,7 @@
 
 using namespace Gdiplus;
 
-// TSF EditSession helper class
+// TSFのEditSessionを実行する補助クラス
 class TsfCaretEditSession : public ITfEditSession {
 private:
     LONG m_refCount;
@@ -119,7 +119,7 @@ bool CaretIndicator::Initialize(HINSTANCE hInstance) {
         return false;
     }
 
-    // TSF 初期化
+    // TSF初期化
     CoInitialize(NULL);
     HRESULT hr = CoCreateInstance(
         CLSID_TF_ThreadMgr,
@@ -143,7 +143,7 @@ bool CaretIndicator::Initialize(HINSTANCE hInstance) {
         // TSF失敗しても続行（他の方法でフォールバック）
     }
 
-    // UI Automation 初期化
+    // UI Automation初期化
     hr = CoCreateInstance(
         CLSID_CUIAutomation,
         NULL,
@@ -194,13 +194,8 @@ bool CaretIndicator::CreateIndicatorWindow() {
         return false;
     }
 
-    // スクリーンショットに写らないように設定 (WDA_EXCLUDEFROMCAPTURE = 0x00000011)
-    // 定数が未定義の場合に備えて直接値を使用するか、定義を確認するが、
-    // ここでは安全のため定数がなければ定義するようにコードを追加するアプローチではなく、
-    // 既存のSDKで定義されていることを期待しつつ、マジックナンバーは避けたいが
-    // ユーザー環境のSDKバージョンが不明なため、念の為コメントで値を記載し、定数を使う。
-    // もしコンパイルエラーになるなら定数を定義する必要がある。
-    // まずは定数を使ってみる。
+    // スクリーンショットに写らないように設定(WDA_EXCLUDEFROMCAPTURE = 0x00000011)
+    // 古いSDKにはWDA_EXCLUDEFROMCAPTUREの定義が無いので、値を直接書く
     const DWORD WDA_EXCLUDEFROMCAPTURE_VAL = 0x00000011;
     SetWindowDisplayAffinity(m_hwnd, WDA_EXCLUDEFROMCAPTURE_VAL);
 
@@ -215,12 +210,6 @@ void CaretIndicator::SetEnabled(bool enabled) {
     if (!enabled) {
         Hide();
     }
-}
-
-void CaretIndicator::Update(ImeState state) {
-    // 後方互換性のため、UpdatePosition + UpdateDisplay を呼ぶ
-    UpdatePosition(state);
-    UpdateDisplay();
 }
 
 bool CaretIndicator::UpdatePosition(ImeState state) {
@@ -275,6 +264,24 @@ void CaretIndicator::ResetCaret() {
     Hide();
 }
 
+void CaretIndicator::SetState(ImeState state) {
+    m_currentState = state;
+    if (m_enabled && m_lastCaretWindow != NULL) {
+        UpdateDisplay();
+    }
+}
+
+void CaretIndicator::ShowAtPhysical(POINT physical) {
+    if (!m_enabled || m_hwnd == NULL) return;
+    // yCursoryはDPI非対応なので、物理ピクセルをyCursoryの座標に変換する。拡大率が100%なら値は変わらない
+    POINT pos = physical;
+    PhysicalToLogicalPointForPerMonitorDPI(m_hwnd, &pos);
+    m_lastCaretPos = pos;
+    m_lastCaretWindow = GetForegroundWindow();
+    m_lastUpdateTick = GetTickCount();
+    UpdateDisplay();
+}
+
 void CaretIndicator::UpdateDisplay() {
     if (!m_enabled) {
         Hide();
@@ -290,7 +297,7 @@ void CaretIndicator::UpdateDisplay() {
     // キャレットの実際の位置を即座に表示（LERPなし、軌跡なし）
     m_currentDisplayPos = m_lastCaretPos;
 
-    // 位置も状態も前回描いたままなら何もしない (最前面の窓を毎回動かし描き直すと、前面のアプリの描画に響く)
+    // 位置も状態も前回描いたままなら何もしない。最前面のウィンドウを毎回動かして描き直すと、前面のアプリの描画に響くため
     if (m_visible && m_rendered
         && m_renderedPos.x == m_currentDisplayPos.x && m_renderedPos.y == m_currentDisplayPos.y
         && m_renderedState == m_currentState) {
@@ -322,7 +329,7 @@ bool CaretIndicator::GetCaretPosition(POINT* pos, HWND* caretWnd) {
         return true;
     }
 
-    // 優先順位2: IMM32（変換中のみ有効）
+    // 優先順位2: IMM32。前面のウィンドウの変換ウィンドウの位置を読み、変換中かは確認しない
     if (TryGetFromIMM32(pos, caretWnd)) {
         m_lastMethod = METHOD_IMM32;
         return true;
@@ -571,7 +578,7 @@ bool CaretIndicator::TryGetCaretFromElement(IUIAutomationElement* element, POINT
                         LONG y = (LONG)rects[1];
 
                         // 明らかにおかしい座標（画面左端など）はスキップ
-                        // VSCodeなどエディタは左端に近い場合があるので閾値は低めに
+                        // 画面の左端に寄せたウィンドウでは、行頭のキャレットのxも小さいので、閾値は低めにする
                         if (x > 10 && y > 0) {
                             pos->x = x;
                             pos->y = y;

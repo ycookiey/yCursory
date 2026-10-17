@@ -1,42 +1,49 @@
-# yCursory - IME Cursor Indicator
+# yCursory
 
-Windows 11でマウスカーソル周囲にIME状態（英字/日本語）をグロー色で表示する軽量常駐ツール。
+日本語IMEの入力モードを、マウスカーソルの色で示すWindowsの常駐ツール。入力欄を見なくても、現在の入力モードが日本語か英字かを判別できる。
 
 ## 特徴
 
-- **マウスカーソルグロー**
-  - 英字モード: 青グロー
-  - 日本語モード: 赤グロー
-- **キャレット（テキストカーソル）インジケーター**
-  - テキスト入力位置にもIME状態を表示
-  - 60fps高速追従、遅延ゼロ
-  - 複数アプリ対応（Notepad、Word、Excel、Vivaldi等）
-- システムトレイ常駐
-- 軽量（EXE: 約120KB, メモリ: 約1.4MB）
+- 英字入力時は青、日本語入力時は赤のグローを、マウスカーソルに表示する
+- 文字の入力位置（キャレット）にも、同じ色のグローを表示する
+- IMEや外部ツールから、IMEのオン・オフとキャレットの位置を受信できる。送信の形式は[プロトコルv1](docs/ime-state-protocol.md)に記載した
 
-## 動く間と止まる間
+## インストール
 
-IME 状態とキャレット位置の確認 (16ms ごと) は、前面の窓でキャレットが取れる間だけ動く。
+[Scoop](https://scoop.sh/)でインストールする。[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`を取得してもよい。
 
-- キャレットが 1 秒続けて取れなければ止まる (ゲーム、キャレットを持たないアプリ、デスクトップ等)。止まっている間は何もしない
-- 前面の窓の切り替えかフォーカスの移動を OS から知らされると (SetWinEventHook) 再開する
-- キャレットインジケーターを無効にしている場合は、再開の直後だけ入力先を探し、見つかれば以後は IME 状態だけを確認する
-- 止まっている間に IME を切り替えても、次に窓かフォーカスが動くまでカーソルの色は変わらない。キャレットを取れないアプリ (端末等) ではこうなる
+```powershell
+scoop bucket add yscoopy https://github.com/ycookiey/yscoopy
+scoop install yscoopy/ycursory
+```
 
-## ログ
+## 使い方
 
-`%LOCALAPPDATA%\yCursory\logs\yCursory.log` に、起動・終了、止まった・再開した、前面のアプリ、キャレットの取得方法 (GUIThreadInfo / IMM32 / UIAutomation / TSF / none) が変わったときだけ書く。1 MB を超えると `yCursory.1.log` に退避する。
+`yCursory.exe`を起動すると、タスクトレイにアイコンが表示される。アイコンを右クリックし、次の項目を選択する。
 
-レベルはレジストリ `HKCU\Software\yCursory` の `LogLevel` (DWORD) で変える: 0=なし 1=error 2=warn 3=info (既定) 4=debug (IME のオン・オフも書く)。
+- Glow Style: グロースタイルをHeavyとLightから選択する
+- Caret Indicator: キャレットのグローの表示を切り替える
+- スタートアップに登録: サインイン時の自動起動を切り替える
+- Exit: 終了する。カーソルは元に戻る
 
-## Glow Style (グロースタイル)
+## 既知の制限
 
-シーンに合わせて選択できる2種類のスタイルを用意しました。
+- キャレットの位置を取得できないアプリでは、IMEを切り替えても、次に前面のウィンドウかフォーカスが切り替わるまで、カーソルの色が変化しない
+- オン・オフを取得できないIMEがある
+- 動作確認はWindows 11のみ
 
-- **Heavy (右下強調)**: デフォルト。右下方向に強いグローを追加し、視認性を高めたスタイル。
-- **Light (対称)**: 従来のデザイン。全方向に均等な柔らかいグロー。
+## アンインストール
 
-## カーソル一覧
+1. タスクトレイのメニューの「スタートアップに登録」のチェックを解除する
+2. タスクトレイのメニューのExitで終了する
+3. `scoop uninstall ycursory`を実行する
+
+アンインストール後も、設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了してカーソルが元に戻らない場合は、yCursoryを再起動してExitで終了するか、サインアウトして再度サインインする。
+
+## グロースタイル
+
+- Heavy: 既定。右下に強いグローを加え、カーソルの視認性を高める
+- Light: 全方向に均等な、柔らかいグロー
 
 | Cursor | Light (EN) | Light (JP) | Heavy (EN) | Heavy (JP) |
 |---|:-:|:-:|:-:|:-:|
@@ -55,32 +62,13 @@ IME 状態とキャレット位置の確認 (16ms ごと) は、前面の窓で�
 
 ## ビルド
 
+Visual StudioのC++のビルドツールとCMakeでビルドする。Visual Studioの「Developer PowerShell for VS」で次を実行すると、`build\yCursory.exe`が生成される。
+
 ```powershell
-# Visual Studio Build Tools が必要
-.\build.bat
+cmake -S . -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-## 使い方
+## ライセンス
 
-1. `build\ime-cursor-indicator.exe` を実行
-2. システムトレイにアイコンが表示される
-3. **グロースタイル切り替え**: トレイアイコンを右クリック → **Glow Style** → **Heavy / Light**
-4. **キャレットインジケーター**: トレイアイコンを右クリック → **Caret Indicator** （チェックでON/OFF）
-5. **スタートアップ登録**: トレイアイコンを右クリック → スタートアップに登録
-6. **終了**: トレイアイコンを右クリック → Exit
-
-## ファイル構成
-
-```
-yCursory/
-├── src/                    # C++ ソースコード
-├── resources/              # カーソル・アイコンファイル
-├── docs/                   # ドキュメント
-│   └── architecture.md        # アーキテクチャ図
-├── build.bat               # ビルドスクリプト
-└── create_from_system_cursor.py  # カーソル生成
-```
-
-## ドキュメント
-
-- [アーキテクチャ](docs/architecture.md) - 設計図（mermaid）
+[MIT License](LICENSE)

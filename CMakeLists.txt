@@ -1,34 +1,38 @@
 cmake_minimum_required(VERSION 3.20)
-project(yCursory VERSION 1.0.0 LANGUAGES CXX)
+project(yCursory VERSION 1.1.0 LANGUAGES CXX RC)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Windows GUI �A�v���P�[�V���� (�R���\�[����\��)
+# コンソールを持たないWindowsのGUIアプリ
 add_executable(${PROJECT_NAME} WIN32
     src/main.cpp
     src/ime_monitor.cpp
-    src/ime_monitor.h
     src/cursor_manager.cpp
-    src/cursor_manager.h
+    src/caret_indicator.cpp
     src/tray_icon.cpp
-    src/tray_icon.h
     src/startup_manager.cpp
-    src/startup_manager.h
-    src/resource.h
+    src/logger.cpp
+    src/ime_provider.cpp
     resources/app.rc
 )
 
-# �K�v�ȃ��C�u����
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} src)
+target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE _UNICODE)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    imm32      # IME API
-    shell32    # �V�F���E�g���C�A�C�R��
-    user32     # �E�B���h�E�E�J�[�\��API
-    gdi32      # �`��
+    imm32
+    gdiplus
+    shell32
+    user32
+    gdi32
+    advapi32
+    ole32
+    oleaut32
 )
 
-# �����[�X�r���h�œK��
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /O2 /GL)
-    target_link_options(${PROJECT_NAME} PRIVATE /LTCG /OPT:REF /OPT:ICF)
+    # ソースはUTF-8で書いている
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /EHsc $<$<CONFIG:Release>:/O2 /GL>)
+    target_link_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/LTCG /OPT:REF /OPT:ICF>)
 endif()
