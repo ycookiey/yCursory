@@ -10,16 +10,18 @@
 
 ## インストール
 
-[Scoop](https://scoop.sh/)でインストールする。[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`を取得してもよい。
+[Scoop](https://scoop.sh/)でインストールする。
 
 ```powershell
 scoop bucket add yscoopy https://github.com/ycookiey/yscoopy
 scoop install yscoopy/ycursory
 ```
 
+または、[Releases](https://github.com/ycookiey/yCursory/releases)から`yCursory.exe`をダウンロードして起動する。
+
 ## 使い方
 
-`yCursory.exe`を起動すると、タスクトレイにアイコンが表示される。アイコンを右クリックし、次の項目を選択する。
+`yCursory.exe`を起動すると、タスクトレイにアイコンが表示される。アイコンを右クリックすると、次の項目のメニューが開く。
 
 - Glow Style: グロースタイルをHeavyとLightから選択する
 - Caret Indicator: キャレットのグローの表示を切り替える
@@ -35,14 +37,14 @@ scoop install yscoopy/ycursory
 ## アンインストール
 
 1. タスクトレイのメニューの「スタートアップに登録」のチェックを解除する
-2. タスクトレイのメニューのExitで終了する
+2. タスクトレイのメニューの「Exit」で終了する
 3. `scoop uninstall ycursory`を実行する
 
-アンインストール後も、設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了してカーソルが元に戻らない場合は、yCursoryを再起動してExitで終了するか、サインアウトして再度サインインする。
+アンインストール後も、設定はレジストリの`HKCU\Software\yCursory`に、ログは`%LOCALAPPDATA%\yCursory\logs\`に残る。不要なら削除する。タスクマネージャーなどでyCursoryを強制終了してカーソルが元に戻らない場合は、yCursoryを再起動して「Exit」で終了するか、サインアウトして再度サインインする。
 
 ## グロースタイル
 
-- Heavy: 既定。右下に強いグローを加え、カーソルの視認性を高める
+- Heavy: 既定。右下を強くした、目立つグロー
 - Light: 全方向に均等な、柔らかいグロー
 
 | Cursor | Light (EN) | Light (JP) | Heavy (EN) | Heavy (JP) |
@@ -62,7 +64,7 @@ scoop install yscoopy/ycursory
 
 ## ビルド
 
-Visual StudioのC++のビルドツールとCMakeでビルドする。Visual Studioの「Developer PowerShell for VS」で次を実行すると、`build\yCursory.exe`が生成される。
+Visual StudioのC++のビルドツールとCMakeでビルドする。Visual Studioの「Developer PowerShell for VS」で次を実行する。出力先は`build\yCursory.exe`。
 
 ```powershell
 cmake -S . -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
