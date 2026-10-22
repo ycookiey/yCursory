@@ -62,17 +62,17 @@ IDC_CURSOR_HAND_JP_HEAVY     CURSOR "cursor_hand_jp_heavy.cur"
 
 // バージョン情報
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,1,0,0
-PRODUCTVERSION 1,1,0,0
+FILEVERSION 1,2,0,0
+PRODUCTVERSION 1,2,0,0
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
         BLOCK "041104b0"
         BEGIN
             VALUE "FileDescription", "IME Cursor Indicator"
-            VALUE "FileVersion", "1.1.0.0"
+            VALUE "FileVersion", "1.2.0.0"
             VALUE "ProductName", "IME Cursor Indicator"
-            VALUE "ProductVersion", "1.1.0.0"
+            VALUE "ProductVersion", "1.2.0.0"
         END
     END
 END

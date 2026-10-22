@@ -31,7 +31,7 @@ echo Compiling C++ sources...
 cl /nologo /c /O2 /EHsc /std:c++17 /DUNICODE /D_UNICODE /utf-8 ^
     /I. /Isrc ^
     /Fo:build\ ^
-    src\main.cpp src\ime_monitor.cpp src\cursor_manager.cpp src\caret_indicator.cpp src\tray_icon.cpp src\startup_manager.cpp src\logger.cpp
+    src\main.cpp src\ime_monitor.cpp src\cursor_manager.cpp src\caret_indicator.cpp src\tray_icon.cpp src\startup_manager.cpp src\logger.cpp src\ime_provider.cpp
 if errorlevel 1 (
     echo Compilation failed!
     pause
@@ -42,7 +42,7 @@ REM Link
 echo Linking...
 link /nologo /OUT:build\yCursory.exe ^
     /SUBSYSTEM:WINDOWS ^
-    build\main.obj build\ime_monitor.obj build\cursor_manager.obj build\caret_indicator.obj build\tray_icon.obj build\startup_manager.obj build\logger.obj ^
+    build\main.obj build\ime_monitor.obj build\cursor_manager.obj build\caret_indicator.obj build\tray_icon.obj build\startup_manager.obj build\logger.obj build\ime_provider.obj ^
     build\app.res ^
     imm32.lib gdiplus.lib shell32.lib user32.lib gdi32.lib kernel32.lib advapi32.lib ole32.lib oleaut32.lib
 if errorlevel 1 (

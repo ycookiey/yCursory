@@ -14,11 +14,12 @@ public:
     ~CaretIndicator();
 
     bool Initialize(HINSTANCE hInstance);
-    void Update(ImeState state);  // 後方互換性のために保持（内部でUpdatePosition+UpdateDisplayを呼ぶ）
-    bool UpdatePosition(ImeState state);  // 位置検出のみ。キャレットが取れたら true (無効時は false)
+    bool UpdatePosition(ImeState state);  // 位置検出のみ。キャレットが取れたらtrue。表示が無効のときはfalse
     void UpdateDisplay();                 // 位置か状態が変わったときだけ描き直す
-    bool Probe();                         // 表示の有無に関係なく、キャレットが取れるかを 1 回だけ調べる
-    void ResetCaret();                    // 前の窓のキャレット位置を捨てて隠す (前面の窓が変わったとき)
+    bool Probe();                         // 表示の有無に関係なく、キャレットが取れるかを1回だけ調べる
+    void ResetCaret();                    // 覚えているキャレット位置を破棄して隠す
+    void SetState(ImeState state);        // 外から知らされたときに、IME状態だけを変える。表示中なら色を描き直す
+    void ShowAtPhysical(POINT physical);  // 外から知らされた、物理ピクセルの位置に出す
     void Show();
     void Hide();
     void Cleanup();
@@ -27,7 +28,7 @@ public:
     void SetEnabled(bool enabled);
     bool IsEnabled() const { return m_enabled; }
 
-    // 直近のキャレット位置の取得に使った方法 (ログ用)。取れなかったときは "none"
+    // ログに書く、直近のキャレット位置の取得に使った方法。取れなかったときは"none"
     const wchar_t* GetLastMethodName() const;
 
 private:
@@ -44,7 +45,7 @@ private:
     HWND m_lastCaretWindow;
     DWORD m_lastUpdateTick;
 
-    // 最後に描いた内容 (同じなら描き直さない)
+    // 最後に描いた内容。次に描く内容が同じなら描き直さない
     bool m_rendered;
     POINT m_renderedPos;
     ImeState m_renderedState;
@@ -65,8 +66,8 @@ private:
     enum DetectionMethod {
         METHOD_GUITHREADINFO,  // 標準アプリ
         METHOD_IMM32,          // IMEコンテキスト
-        METHOD_TSF,            // TSF (同一プロセス)
-        METHOD_UIAUTOMATION,   // UI Automation (別プロセス対応)
+        METHOD_TSF,            // TSF。yCursory自身のスレッドのキャレットだけ取れる
+        METHOD_UIAUTOMATION,   // UI Automation。別プロセスのキャレットも取れる
         METHOD_NONE
     };
     DetectionMethod m_lastMethod;

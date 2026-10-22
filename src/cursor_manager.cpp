@@ -134,7 +134,7 @@ bool CursorManager::Initialize(HINSTANCE hInstance) {
         m_cursorsEnHeavy[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsEnHeavy[i]));
         m_cursorsJpHeavy[i] = LoadCursor(hInstance, MAKEINTRESOURCE(s_resourceIdsJpHeavy[i]));
         
-        // リソース読み込み失敗時のフォールバック (Light)
+        // リソース読み込み失敗時のフォールバック(Light)
         if (m_cursorsEnLight[i] == NULL && m_originals[i] != NULL) {
             m_cursorsEnLight[i] = CopyCursor(m_originals[i]);
         }
@@ -142,7 +142,7 @@ bool CursorManager::Initialize(HINSTANCE hInstance) {
             m_cursorsJpLight[i] = CopyCursor(m_originals[i]);
         }
         
-        // リソース読み込み失敗時のフォールバック (Heavy)
+        // リソース読み込み失敗時のフォールバック(Heavy)
         if (m_cursorsEnHeavy[i] == NULL) {
             m_cursorsEnHeavy[i] = (m_cursorsEnLight[i] != NULL) ? CopyCursor(m_cursorsEnLight[i]) : CopyCursor(m_originals[i]);
         }

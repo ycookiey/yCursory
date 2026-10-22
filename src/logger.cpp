@@ -79,7 +79,7 @@ void Logger::Write(LogLevel level, const wchar_t* format, ...) {
     if (bytes <= 1) return;
 
     RotateIfLarge();
-    // 書く頻度は低い前提なので、毎回開いて閉じる (異常終了しても行が残る)
+    // 書く頻度は低い前提なので、毎回開いて閉じる。異常終了しても書いた行が残る
     HANDLE file = CreateFileW(g_path.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (file == INVALID_HANDLE_VALUE) return;

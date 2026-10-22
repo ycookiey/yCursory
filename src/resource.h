@@ -3,7 +3,7 @@
 // アイコンID
 #define IDI_APP_ICON        101
 
-// カーソルID - 英語モード Light (2xx)
+// カーソルID - 英語モードLight(2xx)
 #define IDC_CURSOR_ARROW_EN_LIGHT      201
 #define IDC_CURSOR_IBEAM_EN_LIGHT      202
 #define IDC_CURSOR_WAIT_EN_LIGHT       203
@@ -17,7 +17,7 @@
 #define IDC_CURSOR_NO_EN_LIGHT         211
 #define IDC_CURSOR_HAND_EN_LIGHT       212
 
-// カーソルID - 日本語モード Light (3xx)
+// カーソルID - 日本語モードLight(3xx)
 #define IDC_CURSOR_ARROW_JP_LIGHT      301
 #define IDC_CURSOR_IBEAM_JP_LIGHT      302
 #define IDC_CURSOR_WAIT_JP_LIGHT       303
@@ -31,7 +31,7 @@
 #define IDC_CURSOR_NO_JP_LIGHT         311
 #define IDC_CURSOR_HAND_JP_LIGHT       312
 
-// カーソルID - 英語モード Heavy (4xx) (旧ASYM)
+// カーソルID - 英語モードHeavy(4xx)
 #define IDC_CURSOR_ARROW_EN_HEAVY    401
 #define IDC_CURSOR_IBEAM_EN_HEAVY    402
 #define IDC_CURSOR_WAIT_EN_HEAVY     403
@@ -45,7 +45,7 @@
 #define IDC_CURSOR_NO_EN_HEAVY       411
 #define IDC_CURSOR_HAND_EN_HEAVY     412
 
-// カーソルID - 日本語モード Heavy (5xx) (旧ASYM)
+// カーソルID - 日本語モードHeavy(5xx)
 #define IDC_CURSOR_ARROW_JP_HEAVY    501
 #define IDC_CURSOR_IBEAM_JP_HEAVY    502
 #define IDC_CURSOR_WAIT_JP_HEAVY     503
