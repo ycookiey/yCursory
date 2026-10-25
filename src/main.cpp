@@ -285,6 +285,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         return 0;
         
+    case WM_SETTINGCHANGE:
+        // タスクバーの明暗が切り替わると"ImmersiveColorSet"が届く
+        if (lParam && lstrcmpiW((LPCWSTR)lParam, L"ImmersiveColorSet") == 0 && g_trayIcon) {
+            g_trayIcon->UpdateTheme();
+        }
+        return 0;
+
     case WM_DESTROY:
         KillTimer(hwnd, TIMER_TICK);
         PostQuitMessage(0);
@@ -309,9 +316,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 1;
     }
     
+    // 表示しないトップレベルウィンドウ。メッセージ専用ウィンドウ(HWND_MESSAGE)には、
+    // タスクバーの明暗の切り替えを知らせるWM_SETTINGCHANGEのブロードキャストが届かない
     g_hwnd = CreateWindowExW(
-        0, L"ImeCursorIndicator", L"IME Cursor Indicator",
-        0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL
+        WS_EX_TOOLWINDOW, L"ImeCursorIndicator", L"IME Cursor Indicator",
+        WS_POPUP, 0, 0, 0, 0, NULL, NULL, hInstance, NULL
     );
     
     if (g_hwnd == NULL) {

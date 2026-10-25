@@ -4,6 +4,10 @@
 // アプリケーションアイコン
 IDI_APP_ICON ICON "app.ico"
 
+// トレイアイコン - タスクバーの色に合わせて切り替える
+IDI_TRAY_DARK  ICON "tray-dark.ico"
+IDI_TRAY_LIGHT ICON "tray-light.ico"
+
 // カーソルリソース - 英語モード Light
 IDC_CURSOR_ARROW_EN_LIGHT      CURSOR "cursor_arrow_en_light.cur"
 IDC_CURSOR_IBEAM_EN_LIGHT      CURSOR "cursor_ibeam_en_light.cur"

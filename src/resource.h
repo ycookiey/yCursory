@@ -1,7 +1,9 @@
 #pragma once
 
 // アイコンID
-#define IDI_APP_ICON        101
+#define IDI_APP_ICON        101  // exeのアイコン。Explorerは最初のアイコンを使うので、最も小さいIDにする
+#define IDI_TRAY_DARK       102  // 暗いタスクバー用のトレイアイコン
+#define IDI_TRAY_LIGHT      103  // 明るいタスクバー用のトレイアイコン
 
 // カーソルID - 英語モードLight(2xx)
 #define IDC_CURSOR_ARROW_EN_LIGHT      201
